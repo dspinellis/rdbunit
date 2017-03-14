@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+#
+# SQL Unit Test runner
+#
+# 
 
 import fileinput
 import re
