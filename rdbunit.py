@@ -2,7 +2,24 @@
 #
 # SQL Unit Test runner
 #
-# 
+# Copyright 2017 Diomidis Spinellis
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Run as:
+# python rdbunit.py "leader_commits_nl_comments.rdbu" |
+# mysql -u root -p$DBPASS -N
+#
 
 import fileinput
 import re
@@ -98,17 +115,18 @@ def make_db_re(dbs):
     print('-- Database RE: ' + database_re)
     return re.compile(database_re, re.IGNORECASE)
 
-def verify_content(name):
+def verify_content(number, name):
     """Verify that the specified table has the same content as the
     table expected"""
     print("""
-        SELECT CONCAT('{}: ', CASE WHEN
+        SELECT CASE WHEN
           (SELECT COUNT(*) FROM (
             SELECT * FROM expected
             UNION
             SELECT * FROM {}
           ) as u) = (SELECT COUNT(*) FROM expected)
-        THEN 'pass' ELSE 'fail' END);\n""".format(name, name))
+        THEN 'ok {} - {}' ELSE 'not ok {} - {}' END;\n""".format(
+            name, number, name, number, name))
 
 def test_table_name(line):
     """Return the name of the table to used in the test database."""
@@ -134,6 +152,8 @@ def process_test(test_spec):
     Return a regular expression matching constructed databases,
     when the postconditions line has been reached."""
     state = 'initial'
+    test_number = 1
+
     for line in test_spec:
         line = line.rstrip()
         if line == '' or line[0] == '#':
@@ -195,7 +215,8 @@ def process_test(test_spec):
         # Check a result
         elif state == 'result':
             if line == 'END':
-                verify_content(table_name)
+                verify_content(test_number, table_name)
+                test_number += 1
                 state = 'initial'
                 continue
             # Table name
@@ -213,6 +234,7 @@ def process_test(test_spec):
             sys.exit('Invalid state: ' + state)
     if state != 'initial':
         sys.exit('Unterminated state: ' + state)
+    print('SELECT "1..{}";'.format(test_number - 1))
 
 if __name__ == "__main__":
     print('-- Auto generated test script file from ' + sys.argv[1])
