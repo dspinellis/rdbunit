@@ -13,6 +13,9 @@ re_time = re.compile(r'\d+:\d+:\d+$')
 re_timestampe = re.compile(r'\d{4}-\d\d-\d\d$ \d+:\d+:\d+$')
 re_boolean = re.compile(r'(true|false)$', re.IGNORECASE)
 
+include_create = re.compile(r'INCLUDE\s+CREATE\s+(.*)$')
+include_select = re.compile(r'INCLUDE\s+SELECT\s+(.*)$')
+
 # Reference to a table in a database \1 is the database \2 is the table name
 db_tablespec = re.compile(r'([A-Za-z_]\w*)\.([A-Za-z_]\w*)')
 
@@ -69,128 +72,144 @@ def create_table(table_name, column_names, values):
     print('CREATE TABLE ' + table_name + '(' +
           ', '.join(map(lambda n, t: n + ' ' + t, column_names, types)) + ');')
 
-def create_test(test_script, query):
+def create_test(test_script):
     create_database('default')
     print('USE test_default;')
     with open(test_script) as test_spec:
-        db_re = process_preconditions(test_spec)
-        process_query(query, db_re)
-        process_postconditions(test_spec)
+        process_test(test_spec)
 
-def process_query(file_name, db_re):
-    """Process an SQL query, substituting referenced databases specified
+def process_sql(file_name, db_re):
+    """Process an SQL statement, substituting referenced databases specified
     in the db_re compiled regular expression with the corresponding test one"""
-    print('-- Query ' + file_name)
     with open(file_name) as query:
         for line in query:
             line = line.rstrip()
             line = db_re.sub(r'test_\1.', line)
             print(line)
 
-def process_preconditions(test_spec):
-    """Process the preconditions of the specified input stream.
-    Return a regular expression matching constructed databases,
-    when the postconditions line has been reached."""
-    print('-- Preconditions')
-    state = None
-    for line in test_spec:
-        line = line.rstrip()
-        if line == '' or line[0] == '#':
-            continue
-
-        if line == 'POST':
-            database_re = r'\b(' + '|'.join(created_databases) + r')\.'
-            print('-- Database RE: ' + database_re)
-            return re.compile(database_re, re.IGNORECASE)
-
-        # Enter precondition state
-        if line == 'PRE':
-            state = 'pre'
-            continue
-
-        # Table name
-        if state == 'pre' and line[-1] == ':':
-            state = 'table_columns'
-            m = db_tablespec.match(line)
-            if m is not None:
-                create_database(m.group(1))
-                table_name = 'test_' + line[:-1]
-            else:
-                table_name = line[:-1]
-            continue
-
-        # Table column names
-        if state == 'table_columns':
-            column_names = line.split()
-            state = 'pre'
-            table_created = False
-            continue
-
-        if state == 'pre' and not table_created:
-            create_table(table_name, column_names, line)
-            table_created = True
-
-        if state == 'pre':
-            print('INSERT INTO ' + table_name + ' VALUES (' +
-                  ', '.join(quote(shlex.split(line))) + ');')
+def make_db_re(dbs):
+    """Return a compiled regular expression for identifying the
+    databases passed in the array"""
+    database_re = r'\b(' + '|'.join(dbs) + r')\.'
+    print('-- Database RE: ' + database_re)
+    return re.compile(database_re, re.IGNORECASE)
 
 def verify_content(name):
     """Verify that the specified table has the same content as the
     table expected"""
     print("""
-        SELECT CASE WHEN
+        SELECT CONCAT('{}: ', CASE WHEN
           (SELECT COUNT(*) FROM (
             SELECT * FROM expected
             UNION
-            SELECT * FROM """ + name + """
+            SELECT * FROM {}
           ) as u) = (SELECT COUNT(*) FROM expected)
-        THEN 'pass' ELSE 'fail' END;
-    """)
+        THEN 'pass' ELSE 'fail' END);\n""".format(name, name))
 
-def process_postconditions(test_spec):
-    """Process the postconditions of the specified input stream.
-    Ensure that each specified table has the expected content
-    by verifying that each specified row exists in it and that the
-    number of specified rows is equal to the number of rows in the
-    table."""
-    print('-- Postconditions')
-    state = 'post'
-    table_name = ''
+def test_table_name(line):
+    """Return the name of the table to used in the test database."""
+    m = db_tablespec.match(line)
+    if m is not None:
+        create_database(m.group(1))
+        return 'test_' + line[:-1]
+    else:
+        return line[:-1]
+
+def insert_values(table, line):
+    """Insert the specified values coming from line into table"""
+    print('INSERT INTO ' + table + ' VALUES (' +
+          ', '.join(quote(shlex.split(line))) + ');')
+
+def syntax_error(state, line):
+    """Terminate the program indicating a syntax error"""
+    sys.exit('Syntax error in line: ' + line +
+             ' (state: ' + state + ')')
+
+def process_test(test_spec):
+    """Process the specified input stream.
+    Return a regular expression matching constructed databases,
+    when the postconditions line has been reached."""
+    state = 'initial'
     for line in test_spec:
         line = line.rstrip()
         if line == '' or line[0] == '#':
             continue
 
-        # Table name
-        if state == 'post' and line[-1] == ':':
-            if table_name != '':
-                verify_content(table_name)
-            state = 'table_columns'
-            m = db_tablespec.match(line)
-            if m is not None:
-                table_name = 'test_' + line[:-1]
+        # Initial state
+        if state == 'initial':
+            print("\n-- " + line)
+            if line == 'BEGIN SETUP':
+                state = 'setup'
+            elif line == 'BEGIN CREATE':
+                state = 'sql'
+            elif line == 'BEGIN SELECT':
+                print('CREATE VIEW result AS')
+                state = 'sql'
+            elif include_select.match(line) is not None:
+                m = include_select.match(line)
+                print('CREATE VIEW result AS')
+                process_sql(m.group(1), make_db_re(created_databases))
+            elif include_create.match(line) is not None:
+                m = include_create.match(line)
+                process_sql(m.group(1), make_db_re(created_databases))
+            elif line == 'BEGIN RESULT':
+                state = 'result'
             else:
-                table_name = line[:-1]
-            continue
+                syntax_error(state, line)
 
-        # Table column names
-        if state == 'table_columns':
+        # Table setup specifications
+        elif state == 'setup':
+            if line == 'END':
+                state = 'initial'
+                continue
+            # Table name
+            if line[-1] == ':':
+                table_name = test_table_name(line)
+                state = 'table_columns'
+                prev_state = 'setup'
+                continue
+            # Data
+            if not table_created:
+                create_table(table_name, column_names, line)
+                table_created = True
+            insert_values(table_name, line)
+
+        # Embedded SQL code
+        elif state == 'sql':
+            line = line.rstrip()
+            line = db_re.sub(r'test_\1.', line)
+            print(line)
+
+        # Specification of table columns
+        elif state == 'table_columns':
+            # Table column names
             column_names = line.split()
-            state = 'post'
+            state = prev_state
             table_created = False
             continue
 
-        if state == 'post' and not table_created:
-            create_table('expected', column_names, line)
-            table_created = True
-
-        if state == 'post':
-            print('INSERT INTO expected VALUES (' +
-                  ', '.join(quote(shlex.split(line))) + ');')
-            continue
-    verify_content(table_name)
-
-
+        # Check a result
+        elif state == 'result':
+            if line == 'END':
+                verify_content(table_name)
+                state = 'initial'
+                continue
+            # Table name
+            if line[-1] == ':':
+                table_name = test_table_name(line)
+                state = 'table_columns'
+                prev_state = 'result'
+                continue
+            # Data
+            if not table_created:
+                create_table('expected', column_names, line)
+                table_created = True
+            insert_values('expected', line)
+        else:
+            sys.exit('Invalid state: ' + state)
+    if state != 'initial':
+        sys.exit('Unterminated state: ' + state)
 
 if __name__ == "__main__":
-    create_test(sys.argv[1], sys.argv[2])
+    print('-- Auto generated test script file from ' + sys.argv[1])
+    create_test(sys.argv[1])
