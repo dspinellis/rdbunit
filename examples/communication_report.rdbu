@@ -1,0 +1,42 @@
+BEGIN SETUP
+leadership.project_leaders:
+project_id
+1
+2
+3
+
+leadership.nl_commits_leader_comments:
+project_id	n
+1		12
+
+leadership.leader_commits_nl_comments:
+project_id	n
+1		0
+
+leadership.nl_issues_leader_comments:
+project_id	n
+2		5
+
+leadership.leader_issues_nl_comments:
+project_id	n
+2		0
+
+leadership.commits_with_comments:
+project_id	n
+1		0
+
+leadership.issues_with_comments:
+project_id	n
+1		8
+2		9
+END
+
+INCLUDE SELECT communication_report.sql
+
+BEGIN RESULT
+expected:
+project_id nl_commits_leader_comments leader_commits_nl_comments nl_issues_leader_comments leader_issues_nl_comments commits_with_comments issues_with_comments
+1	   12                         0                          0                         0                         0                     8
+2	   0                          0                          5                         0                         0                     9
+3	   0                          0                          0                         0                         0                     0
+END
