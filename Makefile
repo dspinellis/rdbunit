@@ -8,3 +8,6 @@ install: rdbunit.py
 .PHONY: uninstall
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/rdbunit
+
+test:
+	cd examples && ../rdbunit.py *.rdbu | mysql -u root -p$$DBPASS -N
