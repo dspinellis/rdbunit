@@ -110,8 +110,12 @@ def process_sql(file_name, db_re):
 def make_db_re(dbs):
     """Return a compiled regular expression for identifying the
     databases passed in the array"""
-    database_re = r'\b(' + '|'.join(dbs) + r')\.'
-    print('-- Database RE: ' + database_re)
+    if len(dbs) > 0:
+        database_re = r'\b(' + '|'.join(dbs) + r')\.'
+        print('-- Database RE: ' + database_re)
+    else:
+        # This RE cannot match any string
+        database_re = r'A\bB'
     return re.compile(database_re, re.IGNORECASE)
 
 def verify_content(number, test_name, case_name):
