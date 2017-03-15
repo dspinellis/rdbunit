@@ -10,7 +10,6 @@ SELECT MAX(revenue) as rm FROM sales;
 END
 
 BEGIN RESULT
-expected:
 rm
 130
 END

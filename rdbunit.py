@@ -116,14 +116,14 @@ def make_db_re(dbs):
 
 def verify_content(number, name):
     """Verify that the specified table has the same content as the
-    table expected"""
+    table test_expected"""
     print("""
         SELECT CASE WHEN
           (SELECT COUNT(*) FROM (
-            SELECT * FROM expected
+            SELECT * FROM test_expected
             UNION
             SELECT * FROM {}
-          ) as u) = (SELECT COUNT(*) FROM expected)
+          ) as u) = (SELECT COUNT(*) FROM test_expected)
         THEN 'ok {} - {}' ELSE 'not ok {} - {}' END;\n""".format(
             name, number, name, number, name))
 
@@ -165,20 +165,33 @@ def process_test(test_spec):
                 state = 'setup'
             elif line == 'BEGIN CREATE':
                 db_re = make_db_re(created_databases)
+                test_statement_type = 'create'
                 state = 'sql'
             elif line == 'BEGIN SELECT':
-                print('CREATE VIEW select_result AS')
+                print('CREATE VIEW test_select_result AS')
                 db_re = make_db_re(created_databases)
+                test_statement_type = 'select'
                 state = 'sql'
             elif include_select.match(line) is not None:
                 m = include_select.match(line)
-                print('CREATE VIEW select_result AS')
+                print('CREATE VIEW test_select_result AS')
                 process_sql(m.group(1), make_db_re(created_databases))
+                test_statement_type = 'select'
             elif include_create.match(line) is not None:
                 m = include_create.match(line)
                 process_sql(m.group(1), make_db_re(created_databases))
+                test_statement_type = 'create'
             elif line == 'BEGIN RESULT':
-                state = 'result'
+                if test_statement_type == 'select':
+                    # Directly process columns; table name is implicit
+                    table_name = 'test_select_result'
+                    state = 'table_columns'
+                    prev_state = 'result'
+                elif test_statement_type == 'create':
+                    state = 'result'
+                else:
+                    syntax_error(state, 'CREATE or SELECT not specified')
+                test_statement_type = None
             else:
                 syntax_error(state, line)
 
@@ -231,9 +244,9 @@ def process_test(test_spec):
                 continue
             # Data
             if not table_created:
-                create_table('expected', column_names, line)
+                create_table('test_expected', column_names, line)
                 table_created = True
-            insert_values('expected', line)
+            insert_values('test_expected', line)
         else:
             sys.exit('Invalid state: ' + state)
     if state != 'initial':
