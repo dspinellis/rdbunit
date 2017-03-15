@@ -93,11 +93,10 @@ def create_table(table_name, column_names, values):
     print('CREATE TABLE ' + table_name + '(' +
           ', '.join(map(lambda n, t: n + ' ' + t, column_names, types)) + ');')
 
-def create_test(test_script):
+def create_test(test_input):
     create_database('default')
     print('USE test_default;')
-    with open(test_script) as test_spec:
-        process_test(test_spec)
+    process_test(test_input)
 
 def process_sql(file_name, db_re):
     """Process an SQL statement, substituting referenced databases specified
@@ -237,5 +236,12 @@ def process_test(test_spec):
     print('SELECT "1..{}";'.format(test_number - 1))
 
 if __name__ == "__main__":
-    print('-- Auto generated test script file from ' + sys.argv[1])
-    create_test(sys.argv[1])
+    print('-- Auto generated test script file from rdbunit')
+    if len(sys.argv) > 1:
+        for test_script in sys.argv[1:]:
+            with open(test_script) as test_input:
+                print('-- Input from ' + test_script)
+                create_test(test_input)
+    else:
+            print('-- Input from stdin')
+            create_test(sys.stdin)
