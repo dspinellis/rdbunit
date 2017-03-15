@@ -123,9 +123,14 @@ def verify_content(number, name):
             SELECT * FROM test_expected
             UNION
             SELECT * FROM {}
-          ) as u) = (SELECT COUNT(*) FROM test_expected)
+          ) AS u1) = (SELECT COUNT(*) FROM test_expected) AND
+          (SELECT COUNT(*) FROM (
+            SELECT * FROM test_expected
+            UNION
+            SELECT * FROM {}
+          ) AS u2) = (SELECT COUNT(*) FROM {})
         THEN 'ok {} - {}' ELSE 'not ok {} - {}' END;\n""".format(
-            name, number, name, number, name))
+            name, name, name, number, name, number, name))
 
 def test_table_name(line):
     """Return the name of the table to used in the test database."""
