@@ -93,10 +93,10 @@ def create_table(table_name, column_names, values):
     print('CREATE TABLE ' + table_name + '(' +
           ', '.join(map(lambda n, t: n + ' ' + t, column_names, types)) + ');')
 
-def create_test(test_input):
+def create_test(test_name, test_input):
     create_database('default')
     print('USE test_default;')
-    process_test(test_input)
+    process_test(test_name, test_input)
 
 def process_sql(file_name, db_re):
     """Process an SQL statement, substituting referenced databases specified
@@ -114,7 +114,7 @@ def make_db_re(dbs):
     print('-- Database RE: ' + database_re)
     return re.compile(database_re, re.IGNORECASE)
 
-def verify_content(number, name):
+def verify_content(number, test_name, case_name):
     """Verify that the specified table has the same content as the
     table test_expected"""
     print("""
@@ -129,8 +129,9 @@ def verify_content(number, name):
             UNION
             SELECT * FROM {}
           ) AS u2) = (SELECT COUNT(*) FROM {})
-        THEN 'ok {} - {}' ELSE 'not ok {} - {}' END;\n""".format(
-            name, name, name, number, name, number, name))
+        THEN 'ok {} - {}: {}' ELSE 'not ok {} - {}: {}' END;\n""".format(
+            case_name, case_name, case_name, number, test_name, case_name,
+            number, test_name, case_name))
 
 def test_table_name(line):
     """Return the name of the table to used in the test database."""
@@ -151,7 +152,7 @@ def syntax_error(state, line):
     sys.exit('Syntax error in line: ' + line +
              ' (state: ' + state + ')')
 
-def process_test(test_spec):
+def process_test(test_name, test_spec):
     """Process the specified input stream.
     Return a regular expression matching constructed databases,
     when the postconditions line has been reached."""
@@ -237,7 +238,7 @@ def process_test(test_spec):
         # Check a result
         elif state == 'result':
             if line == 'END':
-                verify_content(test_number, table_name)
+                verify_content(test_number, test_name, table_name)
                 test_number += 1
                 state = 'initial'
                 continue
@@ -266,7 +267,7 @@ if __name__ == "__main__":
         for test_script in sys.argv[1:]:
             with open(test_script) as test_input:
                 print('-- Input from ' + test_script)
-                create_test(test_input)
+                create_test(test_script, test_input)
     else:
             print('-- Input from stdin')
-            create_test(sys.stdin)
+            create_test('stdin', sys.stdin)
