@@ -31,7 +31,7 @@ re_integer = re.compile(r'\d+$')
 re_real = re.compile(r'((\d+\.\d*)|(\d*\.\d+)([Ee]-?\d+)?)|\d+[Ee]-?\d+$')
 re_date = re.compile(r'\d{4}-\d\d-\d\d$')
 re_time = re.compile(r'\d+:\d+:\d+$')
-re_timestampe = re.compile(r'\d{4}-\d\d-\d\d$ \d+:\d+:\d+$')
+re_timestamp = re.compile(r'\d{4}-\d\d-\d\d$ \d+:\d+:\d+$')
 re_boolean = re.compile(r'(true|false)$', re.IGNORECASE)
 
 include_create = re.compile(r'INCLUDE\s+CREATE\s+(.*)$')
@@ -164,13 +164,15 @@ def process_test(test_spec):
             if line == 'BEGIN SETUP':
                 state = 'setup'
             elif line == 'BEGIN CREATE':
+                db_re = make_db_re(created_databases)
                 state = 'sql'
             elif line == 'BEGIN SELECT':
-                print('CREATE VIEW result AS')
+                print('CREATE VIEW select_result AS')
+                db_re = make_db_re(created_databases)
                 state = 'sql'
             elif include_select.match(line) is not None:
                 m = include_select.match(line)
-                print('CREATE VIEW result AS')
+                print('CREATE VIEW select_result AS')
                 process_sql(m.group(1), make_db_re(created_databases))
             elif include_create.match(line) is not None:
                 m = include_create.match(line)
@@ -200,6 +202,9 @@ def process_test(test_spec):
         # Embedded SQL code
         elif state == 'sql':
             line = line.rstrip()
+            if line == 'END':
+                state = 'initial'
+                continue
             line = db_re.sub(r'test_\1.', line)
             print(line)
 
@@ -233,6 +238,8 @@ def process_test(test_spec):
             sys.exit('Invalid state: ' + state)
     if state != 'initial':
         sys.exit('Unterminated state: ' + state)
+
+    # Display number of executed test cases
     print('SELECT "1..{}";'.format(test_number - 1))
 
 if __name__ == "__main__":
