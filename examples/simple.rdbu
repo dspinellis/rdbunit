@@ -6,10 +6,10 @@ April	50
 END
 
 BEGIN SELECT
-SELECT MAX(revenue) as rm FROM sales;
+SELECT MAX(revenue) as max_revenue FROM sales;
 END
 
 BEGIN RESULT
-rm
+max_revenue
 130
 END
