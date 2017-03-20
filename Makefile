@@ -11,3 +11,6 @@ uninstall:
 
 test:
 	cd examples && ../rdbunit.py *.rdbu | mysql -u root -p$$DBPASS -N
+
+qa:
+	pep8 rdbunit.py
