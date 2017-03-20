@@ -204,6 +204,8 @@ def process_test(test_name, test_spec):
     """Process the specified input stream.
     Return a regular expression matching constructed databases,
     when the postconditions line has been reached."""
+    # pylint: disable=too-many-statements
+    # pylint: disable=too-many-branches
     state = 'initial'
     test_number = 1
     # Created databases
