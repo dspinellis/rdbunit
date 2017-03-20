@@ -25,6 +25,7 @@ mysql -u root -p$DBPASS -N
 
 from __future__ import absolute_import
 from __future__ import print_function
+import argparse
 import re
 import shlex
 import sys
@@ -124,10 +125,12 @@ def create_table(table_name, column_names, values):
     return types
 
 
-def create_test_cases(test_name, file_input):
+def create_test_cases(args, test_name, file_input):
     """Create the test cases with the specified name in input"""
-    create_database([], 'test_default')
-    print('USE test_default;')
+    print('-- Input from ' + test_name)
+    if not args.existing_database:
+        create_database([], 'test_default')
+        print('USE test_default;')
     process_test(test_name, file_input)
 
 
@@ -314,12 +317,21 @@ def process_test(test_name, test_spec):
     print('SELECT "1..{}";'.format(test_number - 1))
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description='Relational database query unity testing')
+    parser.add_argument('-e', '--existing-database',
+                        help='Use existing database; do not create test one',
+                        action='store_true')
+
+    parser.add_argument('test_script',
+                        help='Script containing test specification',
+                        nargs='*', default='-',
+                        type=str)
+    args = parser.parse_args()
     print('-- Auto generated test script file from rdbunit')
-    if len(sys.argv) > 1:
-        for test_script in sys.argv[1:]:
-            with open(test_script) as test_input:
-                print('-- Input from ' + test_script)
-                create_test_cases(test_script, test_input)
-    else:
-        print('-- Input from stdin')
-        create_test_cases('stdin', sys.stdin)
+    for script_name in args.test_script:
+        if script_name == '-':
+            create_test_cases(args, '<stdin>', sys.stdin)
+        else:
+            with open(script_name) as test_input:
+                create_test_cases(args, script_name, test_input)
