@@ -9,6 +9,6 @@ addons:
     - sqlite3
 
 before_install:
-    - pip install pep8
+    - pip install pep8 pylint
 
 script: make qa
