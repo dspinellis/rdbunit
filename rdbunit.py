@@ -152,7 +152,7 @@ def make_db_re(dbs):
         print('-- Database RE: ' + database_re)
     else:
         # This RE cannot match any string
-        database_re = r'A\bB'
+        database_re = r'(A\bB)'
     return re.compile(database_re, re.IGNORECASE)
 
 
