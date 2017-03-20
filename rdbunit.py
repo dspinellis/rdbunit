@@ -316,7 +316,9 @@ def process_test(test_name, test_spec):
     # Display number of executed test cases
     print('SELECT "1..{}";'.format(test_number - 1))
 
-if __name__ == "__main__":
+
+def main():
+    """Program entry point: parse arguments and create test cases"""
     parser = argparse.ArgumentParser(
         description='Relational database query unity testing')
     parser.add_argument('-e', '--existing-database',
@@ -335,3 +337,7 @@ if __name__ == "__main__":
         else:
             with open(script_name) as test_input:
                 create_test_cases(args, script_name, test_input)
+
+
+if __name__ == "__main__":
+    main()
