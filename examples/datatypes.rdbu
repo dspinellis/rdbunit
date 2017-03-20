@@ -1,0 +1,16 @@
+# Demonstrate how rdbunit handles diverse data types
+BEGIN SETUP
+contacts:
+name	registered	value	reg_date
+John	true		12	'2015-03-02'
+Mary	false		10	'2012-03-02'
+END
+
+BEGIN SELECT
+SELECT *, NULL AS a FROM contacts WHERE registered;
+END
+
+BEGIN RESULT
+name	registered	value	reg_date	a
+John	True		12	'2015-03-02'	Null
+END

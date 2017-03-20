@@ -47,6 +47,7 @@ db_tableref = None
 # Created databases
 created_databases = []
 
+
 def create_database(name):
     """Create a database with the specified name"""
     if name in created_databases:
@@ -56,42 +57,75 @@ def create_database(name):
     if name != 'default':
         created_databases.append(name)
 
-def quote(values):
-    """Quote the non-digit values in values"""
-    ret = []
-    for v in values:
-        if re_integer.match(v) or re_real.match(v):
-            ret.append(v)
-        else:
-            ret.append("'" + v + "'")
-    return ret
 
-def data_type(values):
-    """Return the data types corresponding to the values"""
-    ret = []
-    for v in values:
-        if re_integer.match(v):
-            ret.append('INTEGER')
-        elif re_real.match(v):
-            ret.append('REAL')
-        elif re_date.match(v):
-            ret.append('DATE')
-        elif re_time.match(v):
-            ret.append('TIME')
-        elif re_timestamp.match(v):
-            ret.append('TIMESTAMP')
-        elif re_boolean.match(v):
-            ret.append('BOOLEAN')
+class SqlType:
+    """An SQL type's name and its value representation"""
+    def __init__(self, value):
+        def boolean_value(v):
+            """Return the SQL representation of a Boolean value.
+            Use integers for SQLite compatibility."""
+            if v.lower() == 'false':
+                return '0'
+            elif v.lower() == 'null':
+                return 'NULL'
+            else:
+                return '1'
+
+        def quoted_value(v):
+            """Return the SQL representation of a quoted value."""
+            if v.lower() == 'null':
+                return 'NULL'
+            else:
+                return "'" + v + "'"
+
+        def unquoted_value(v):
+            """Return the SQL representation of an unquoted value."""
+            if v.lower() == 'null':
+                return 'NULL'
+            else:
+                return str(v)
+
+        if re_integer.match(value):
+            self.name = 'INTEGER'
+            self.sql_repr = unquoted_value
+        elif re_real.match(value):
+            self.name = 'REAL'
+            self.sql_repr = unquoted_value
+        elif re_date.match(value):
+            self.name = 'DATE'
+            self.sql_repr = quoted_value
+        elif re_time.match(value):
+            self.name = 'TIME'
+            self.sql_repr = quoted_value
+        elif re_timestamp.match(value):
+            self.name = 'TIMESTAMP'
+            self.sql_repr = quoted_value
+        elif re_boolean.match(value):
+            self.name = 'BOOLEAN'
+            self.sql_repr = boolean_value
         else:
-            ret.append('VARCHAR(255)')
-    return ret
+            self.name = 'VARCHAR(255)'
+            self.sql_repr = quoted_value
+
+    def get_name(self):
+        """Return a type's name"""
+        return self.name
+
+    def get_value(self, v):
+        """Return a type's value, suitably quoted"""
+        return self.sql_repr(v)
+
 
 def create_table(table_name, column_names, values):
-    """Create the specified table taking as a hint for types the values"""
+    """Create the specified table taking as a hint for types the values.
+    Return the type objects associated with the values."""
     print('DROP TABLE IF EXISTS ' + table_name + ';')
-    types = data_type(shlex.split(values))
+    # Create data type objects from the values
+    types = map(SqlType, shlex.split(values))
     print('CREATE TABLE ' + table_name + '(' +
-          ', '.join(map(lambda n, t: n + ' ' + t, column_names, types)) + ');')
+          ', '.join(map(lambda n, t: n + ' ' + t.get_name(),
+                        column_names, types)) + ');')
+    return types
 
 def create_test(test_name, test_input):
     create_database('default')
@@ -146,10 +180,13 @@ def test_table_name(line):
     else:
         return line[:-1]
 
-def insert_values(table, line):
-    """Insert the specified values coming from line into table"""
-    print('INSERT INTO ' + table + ' VALUES (' +
-          ', '.join(quote(shlex.split(line))) + ');')
+def insert_values(table, types, line):
+    """Insert into the table the specified values and their types coming
+    from line"""
+
+    values = shlex.split(line)
+    quoted = map(lambda v, t: t.get_value(v), values, types)
+    print('INSERT INTO ' + table + ' VALUES (' + ', '.join(quoted) + ');')
 
 def syntax_error(state, line):
     """Terminate the program indicating a syntax error"""
@@ -218,9 +255,9 @@ def process_test(test_name, test_spec):
                 continue
             # Data
             if not table_created:
-                create_table(table_name, column_names, line)
+                types = create_table(table_name, column_names, line)
                 table_created = True
-            insert_values(table_name, line)
+            insert_values(table_name, types, line)
 
         # Embedded SQL code
         elif state == 'sql':
@@ -254,9 +291,9 @@ def process_test(test_name, test_spec):
                 continue
             # Data
             if not table_created:
-                create_table('test_expected', column_names, line)
+                types = create_table('test_expected', column_names, line)
                 table_created = True
-            insert_values('test_expected', line)
+            insert_values('test_expected', types, line)
         else:
             sys.exit('Invalid state: ' + state)
     if state != 'initial':
