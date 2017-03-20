@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 #
-# SQL Unit Test runner
-#
 # Copyright 2017 Diomidis Spinellis
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,34 +14,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Run as:
-# python rdbunit.py "leader_commits_nl_comments.rdbu" |
-# mysql -u root -p$DBPASS -N
-#
+
+"""
+SQL Unit Test runner
+
+Run as:
+python rdbunit.py "leader_commits_nl_comments.rdbu" |
+mysql -u root -p$DBPASS -N
+"""
 
 from __future__ import absolute_import
-import fileinput
+from __future__ import print_function
 import re
 import shlex
 import sys
 
 # Values and their corresponding SQL data types
-re_integer = re.compile(r'\d+$')
-re_real = re.compile(r'((\d+\.\d*)|(\d*\.\d+)([Ee]-?\d+)?)|\d+[Ee]-?\d+$')
-re_date = re.compile(r'\d{4}-\d\d-\d\d$')
-re_time = re.compile(r'\d+:\d+:\d+$')
-re_timestamp = re.compile(r'\d{4}-\d\d-\d\d$ \d+:\d+:\d+$')
-re_boolean = re.compile(r'(true|false)$', re.IGNORECASE)
+RE_INTEGER = re.compile(r'\d+$')
+RE_REAL = re.compile(r'((\d+\.\d*)|(\d*\.\d+)([Ee]-?\d+)?)|\d+[Ee]-?\d+$')
+RE_DATE = re.compile(r'\d{4}-\d\d-\d\d$')
+RE_TIME = re.compile(r'\d+:\d+:\d+$')
+RE_TIMESTAMP = re.compile(r'\d{4}-\d\d-\d\d$ \d+:\d+:\d+$')
+RE_BOOLEAN = re.compile(r'(true|false)$', re.IGNORECASE)
 
-include_create = re.compile(r'INCLUDE\s+CREATE\s+(.*)$')
-include_select = re.compile(r'INCLUDE\s+SELECT\s+(.*)$')
+RE_INCLUDE_CREATE = re.compile(r'INCLUDE\s+CREATE\s+(.*)$')
+RE_INCLUDE_SELECT = re.compile(r'INCLUDE\s+SELECT\s+(.*)$')
 
 # Reference to a table in a database \1 is the database \2 is the table name
-db_tablespec = re.compile(r'([A-Za-z_]\w*)\.([A-Za-z_]\w*)')
-
-# Explicit reference to a table within a specified database
-# \1 is the database followed by a .
-db_tableref = None
+RE_DB_TABLESPEC = re.compile(r'([A-Za-z_]\w*)\.([A-Za-z_]\w*)')
 
 # Created databases
 created_databases = []
@@ -59,49 +57,49 @@ def create_database(name):
         created_databases.append(name)
 
 
-class SqlType:
+class SqlType(object):
     """An SQL type's name and its value representation"""
     def __init__(self, value):
-        def boolean_value(v):
+        def boolean_value(val):
             """Return the SQL representation of a Boolean value.
             Use integers for SQLite compatibility."""
-            if v.lower() == 'false':
+            if val.lower() == 'false':
                 return '0'
-            elif v.lower() == 'null':
+            elif val.lower() == 'null':
                 return 'NULL'
             else:
                 return '1'
 
-        def quoted_value(v):
+        def quoted_value(val):
             """Return the SQL representation of a quoted value."""
-            if v.lower() == 'null':
+            if val.lower() == 'null':
                 return 'NULL'
             else:
-                return "'" + v + "'"
+                return "'" + val + "'"
 
-        def unquoted_value(v):
+        def unquoted_value(val):
             """Return the SQL representation of an unquoted value."""
-            if v.lower() == 'null':
+            if val.lower() == 'null':
                 return 'NULL'
             else:
-                return str(v)
+                return str(val)
 
-        if re_integer.match(value):
+        if RE_INTEGER.match(value):
             self.name = 'INTEGER'
             self.sql_repr = unquoted_value
-        elif re_real.match(value):
+        elif RE_REAL.match(value):
             self.name = 'REAL'
             self.sql_repr = unquoted_value
-        elif re_date.match(value):
+        elif RE_DATE.match(value):
             self.name = 'DATE'
             self.sql_repr = quoted_value
-        elif re_time.match(value):
+        elif RE_TIME.match(value):
             self.name = 'TIME'
             self.sql_repr = quoted_value
-        elif re_timestamp.match(value):
+        elif RE_TIMESTAMP.match(value):
             self.name = 'TIMESTAMP'
             self.sql_repr = quoted_value
-        elif re_boolean.match(value):
+        elif RE_BOOLEAN.match(value):
             self.name = 'BOOLEAN'
             self.sql_repr = boolean_value
         else:
@@ -112,9 +110,9 @@ class SqlType:
         """Return a type's name"""
         return self.name
 
-    def get_value(self, v):
+    def get_value(self, val):
         """Return a type's value, suitably quoted"""
-        return self.sql_repr(v)
+        return self.sql_repr(val)
 
 
 def create_table(table_name, column_names, values):
@@ -122,17 +120,18 @@ def create_table(table_name, column_names, values):
     Return the type objects associated with the values."""
     print('DROP TABLE IF EXISTS ' + table_name + ';')
     # Create data type objects from the values
-    types = map(SqlType, shlex.split(values))
+    types = [SqlType(x) for x in shlex.split(values)]
     print('CREATE TABLE ' + table_name + '(' +
-          ', '.join(map(lambda n, t: n + ' ' + t.get_name(),
-                        column_names, types)) + ');')
+          ', '.join([n + ' ' + t.get_name() for n, t in zip(
+              column_names, types)]) + ');')
     return types
 
 
-def create_test(test_name, test_input):
+def create_test_cases(test_name, file_input):
+    """Create the test cases with the specified name in input"""
     create_database('default')
     print('USE test_default;')
-    process_test(test_name, test_input)
+    process_test(test_name, file_input)
 
 
 def process_sql(file_name, db_re):
@@ -179,9 +178,9 @@ def verify_content(number, test_name, case_name):
 
 def test_table_name(line):
     """Return the name of the table to used in the test database."""
-    m = db_tablespec.match(line)
-    if m is not None:
-        create_database(m.group(1))
+    matched = RE_DB_TABLESPEC.match(line)
+    if matched is not None:
+        create_database(matched.group(1))
         return 'test_' + line[:-1]
     else:
         return line[:-1]
@@ -192,8 +191,8 @@ def insert_values(table, types, line):
     from line"""
 
     values = shlex.split(line)
-    quoted = map(lambda v, t: t.get_value(v), values, types)
-    print('INSERT INTO ' + table + ' VALUES (' + ', '.join(quoted) + ');')
+    quoted_list = ', '.join([t.get_value(v) for v, t in zip(values, types)])
+    print('INSERT INTO ' + table + ' VALUES (' + quoted_list + ');')
 
 
 def syntax_error(state, line):
@@ -208,6 +207,9 @@ def process_test(test_name, test_spec):
     when the postconditions line has been reached."""
     state = 'initial'
     test_number = 1
+    # To silence pylint
+    table_created = False
+    column_names = []
 
     for line in test_spec:
         line = line.rstrip()
@@ -228,14 +230,14 @@ def process_test(test_name, test_spec):
                 db_re = make_db_re(created_databases)
                 test_statement_type = 'select'
                 state = 'sql'
-            elif include_select.match(line) is not None:
-                m = include_select.match(line)
+            elif RE_INCLUDE_SELECT.match(line) is not None:
+                matched = RE_INCLUDE_SELECT.match(line)
                 print('CREATE VIEW test_select_result AS')
-                process_sql(m.group(1), make_db_re(created_databases))
+                process_sql(matched.group(1), make_db_re(created_databases))
                 test_statement_type = 'select'
-            elif include_create.match(line) is not None:
-                m = include_create.match(line)
-                process_sql(m.group(1), make_db_re(created_databases))
+            elif RE_INCLUDE_CREATE.match(line) is not None:
+                matched = RE_INCLUDE_CREATE.match(line)
+                process_sql(matched.group(1), make_db_re(created_databases))
                 test_statement_type = 'create'
             elif line == 'BEGIN RESULT':
                 if test_statement_type == 'select':
@@ -317,7 +319,7 @@ if __name__ == "__main__":
         for test_script in sys.argv[1:]:
             with open(test_script) as test_input:
                 print('-- Input from ' + test_script)
-                create_test(test_script, test_input)
+                create_test_cases(test_script, test_input)
     else:
-            print('-- Input from stdin')
-            create_test('stdin', sys.stdin)
+        print('-- Input from stdin')
+        create_test_cases('stdin', sys.stdin)

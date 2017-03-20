@@ -14,3 +14,4 @@ test:
 
 qa:
 	pep8 rdbunit.py
+	pylint rdbunit.py
