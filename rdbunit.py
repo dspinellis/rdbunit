@@ -43,16 +43,13 @@ RE_INCLUDE_SELECT = re.compile(r'INCLUDE\s+SELECT\s+(.*)$')
 # Reference to a table in a database \1 is the database \2 is the table name
 RE_DB_TABLESPEC = re.compile(r'([A-Za-z_]\w*)\.([A-Za-z_]\w*)')
 
-# Created databases
-created_databases = []
 
-
-def create_database(name):
+def create_database(created_databases, name):
     """Create a database with the specified name"""
-    if name in created_databases:
+    if name is None or name in created_databases:
         return
-    print('DROP DATABASE IF EXISTS test_' + name + ';')
-    print('CREATE DATABASE test_' + name + ';')
+    print('DROP DATABASE IF EXISTS ' + name + ';')
+    print('CREATE DATABASE ' + name + ';')
     if name != 'default':
         created_databases.append(name)
 
@@ -129,7 +126,7 @@ def create_table(table_name, column_names, values):
 
 def create_test_cases(test_name, file_input):
     """Create the test cases with the specified name in input"""
-    create_database('default')
+    create_database([], 'test_default')
     print('USE test_default;')
     process_test(test_name, file_input)
 
@@ -177,13 +174,12 @@ def verify_content(number, test_name, case_name):
 
 
 def test_table_name(line):
-    """Return the name of the table to used in the test database."""
+    """Return the name of the table and database to use."""
     matched = RE_DB_TABLESPEC.match(line)
     if matched is not None:
-        create_database(matched.group(1))
-        return 'test_' + line[:-1]
+        return 'test_' + line[:-1], 'test_' + matched.group(1)
     else:
-        return line[:-1]
+        return line[:-1], None
 
 
 def insert_values(table, types, line):
@@ -207,6 +203,8 @@ def process_test(test_name, test_spec):
     when the postconditions line has been reached."""
     state = 'initial'
     test_number = 1
+    # Created databases
+    created_databases = []
     # To silence pylint
     table_created = False
     column_names = []
@@ -260,7 +258,8 @@ def process_test(test_name, test_spec):
                 continue
             # Table name
             if line[-1] == ':':
-                table_name = test_table_name(line)
+                table_name, dbname = test_table_name(line)
+                create_database(created_databases, dbname)
                 state = 'table_columns'
                 prev_state = 'setup'
                 continue
@@ -296,7 +295,8 @@ def process_test(test_name, test_spec):
                 continue
             # Table name
             if line[-1] == ':':
-                table_name = test_table_name(line)
+                table_name, dbname = test_table_name(line)
+                create_database(created_databases, dbname)
                 state = 'table_columns'
                 prev_state = 'result'
                 continue
