@@ -8,4 +8,7 @@ addons:
   apt_packages:
     - sqlite3
 
+before_install:
+    - pip install pep8
+
 script: make qa
