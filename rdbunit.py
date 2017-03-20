@@ -19,7 +19,7 @@
 SQL Unit Test runner
 
 Run as:
-python rdbunit.py "leader_commits_nl_comments.rdbu" |
+python rdbunit.py [-e] "leader_commits_nl_comments.rdbu" |
 mysql -u root -p$DBPASS -N
 """
 
