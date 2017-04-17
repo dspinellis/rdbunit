@@ -65,22 +65,19 @@ class SqlType(object):
                 return '0'
             elif val.lower() == 'null':
                 return 'NULL'
-            else:
-                return '1'
+            return '1'
 
         def quoted_value(val):
             """Return the SQL representation of a quoted value."""
             if val.lower() == 'null':
                 return 'NULL'
-            else:
-                return "'" + val + "'"
+            return "'" + val + "'"
 
         def unquoted_value(val):
             """Return the SQL representation of an unquoted value."""
             if val.lower() == 'null':
                 return 'NULL'
-            else:
-                return str(val)
+            return str(val)
 
         if RE_INTEGER.match(value):
             self.name = 'INTEGER'
@@ -147,7 +144,7 @@ def process_sql(file_name, db_re):
 def make_db_re(dbs):
     """Return a compiled regular expression for identifying the
     databases passed in the array"""
-    if len(dbs) > 0:
+    if dbs:
         database_re = r'\b(' + '|'.join(dbs) + r')\.'
         print('-- Database RE: ' + database_re)
     else:
@@ -181,8 +178,7 @@ def test_table_name(line):
     matched = RE_DB_TABLESPEC.match(line)
     if matched is not None:
         return 'test_' + line[:-1], 'test_' + matched.group(1)
-    else:
-        return line[:-1], None
+    return line[:-1], None
 
 
 def insert_values(table, types, line):
