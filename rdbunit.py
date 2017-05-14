@@ -60,6 +60,7 @@ def create_database(created_databases, name):
 class SqlType(object):
     """An SQL type's name and its value representation"""
     def __init__(self, value):
+        # pylint: disable=too-many-branches
         def boolean_value(val):
             """Return the SQL representation of a Boolean value.
             Use integers for SQLite compatibility."""
@@ -170,10 +171,14 @@ def verify_content(number, test_name, case_name):
             SELECT * FROM test_expected
             UNION
             SELECT * FROM {}
-          ) AS u2) = (SELECT COUNT(*) FROM {})
-        THEN 'ok {} - {}: {}' ELSE 'not ok {} - {}: {}' END;\n""".format(
-        case_name, case_name, case_name, number, test_name, case_name,
-        number, test_name, case_name))
+          ) AS u2) = (SELECT COUNT(*) FROM {})""".format(case_name,
+                                                         case_name,
+                                                         case_name))
+    print(("""
+        THEN 'ok {} - {}: {}' ELSE """ +
+           """'not ok {} - {}: {}' END;\n""").format(number, test_name,
+                                                     case_name, number,
+                                                     test_name, case_name))
 
 
 def test_table_name(line):
@@ -199,6 +204,15 @@ def syntax_error(state, line):
              ' (state: ' + state + ')')
 
 
+def file_to_list(file_input):
+    """Convert file input into a list.  This allows it to be processed
+    multiple times."""
+    result = []
+    for line in file_input:
+        result.append(line)
+    return result
+
+
 def process_test(test_name, test_spec):
     """Process the specified input stream.
     Return a regular expression matching constructed databases,
@@ -213,6 +227,7 @@ def process_test(test_name, test_spec):
     table_created = False
     column_names = []
 
+    test_spec = file_to_list(test_spec)
     for line in test_spec:
         line = line.rstrip()
         if line == '' or line[0] == '#':
