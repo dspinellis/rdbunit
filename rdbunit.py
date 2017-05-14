@@ -172,8 +172,8 @@ def verify_content(number, test_name, case_name):
             SELECT * FROM {}
           ) AS u2) = (SELECT COUNT(*) FROM {})
         THEN 'ok {} - {}: {}' ELSE 'not ok {} - {}: {}' END;\n""".format(
-            case_name, case_name, case_name, number, test_name, case_name,
-            number, test_name, case_name))
+        case_name, case_name, case_name, number, test_name, case_name,
+        number, test_name, case_name))
 
 
 def test_table_name(line):
@@ -271,7 +271,8 @@ def process_test(test_name, test_spec):
             # Data
             if not table_created:
                 if not table_name:
-                    syntax_error(state, 'Attempt to provide data without specifying a table name')
+                    syntax_error(state, 'Attempt to provide data ' +
+                                 'without specifying a table name')
                 types = create_table(table_name, column_names, line)
                 table_created = True
             insert_values(table_name, types, line)
