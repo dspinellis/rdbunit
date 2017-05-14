@@ -182,11 +182,11 @@ def verify_content(number, test_name, case_name):
 
 
 def test_table_name(line):
-    """Return the name of the table and database to use."""
+    """Return the name of the table to use."""
     matched = RE_DB_TABLESPEC.match(line)
     if matched is not None:
-        return 'test_' + line[:-1], 'test_' + matched.group(1)
-    return line[:-1], None
+        return 'test_' + line[:-1]
+    return line[:-1]
 
 
 def insert_values(table, types, line):
@@ -213,6 +213,15 @@ def file_to_list(file_input):
     return result
 
 
+def create_databases(test_spec, created_databases):
+    """Scan the file for the databases to create and update
+    created_databases with their names"""
+    for line in test_spec:
+        matched = RE_DB_TABLESPEC.match(line)
+        if matched is not None:
+            create_database(created_databases, 'test_' + matched.group(1))
+
+
 def process_test(test_name, test_spec):
     """Process the specified input stream.
     Return a regular expression matching constructed databases,
@@ -228,6 +237,7 @@ def process_test(test_name, test_spec):
     column_names = []
 
     test_spec = file_to_list(test_spec)
+    create_databases(test_spec, created_databases)
     for line in test_spec:
         line = line.rstrip()
         if line == '' or line[0] == '#':
@@ -278,8 +288,7 @@ def process_test(test_name, test_spec):
                 continue
             # Table name
             if line[-1] == ':':
-                table_name, dbname = test_table_name(line)
-                create_database(created_databases, dbname)
+                table_name = test_table_name(line)
                 state = 'table_columns'
                 prev_state = 'setup'
                 continue
@@ -318,8 +327,7 @@ def process_test(test_name, test_spec):
                 continue
             # Table name
             if line[-1] == ':':
-                table_name, dbname = test_table_name(line)
-                create_database(created_databases, dbname)
+                table_name = test_table_name(line)
                 state = 'table_columns'
                 prev_state = 'result'
                 continue
