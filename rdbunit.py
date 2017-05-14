@@ -139,7 +139,7 @@ def process_sql(file_name, db_re):
     with open(file_name) as query:
         for line in query:
             line = line.rstrip()
-            line = db_re.sub(r'test_\1.', line)
+            line = db_re.sub(r'\btest_\1.', line)
             print(line)
 
 
@@ -223,6 +223,7 @@ def process_test(test_name, test_spec):
             print("\n-- " + line)
             if line == 'BEGIN SETUP':
                 state = 'setup'
+                table_name = None
             elif line == 'BEGIN CREATE':
                 db_re = make_db_re(created_databases)
                 test_statement_type = 'create'
@@ -269,6 +270,8 @@ def process_test(test_name, test_spec):
                 continue
             # Data
             if not table_created:
+                if not table_name:
+                    syntax_error(state, 'Attempt to provide data without specifying a table name')
                 types = create_table(table_name, column_names, line)
                 table_created = True
             insert_values(table_name, types, line)
