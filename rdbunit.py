@@ -43,6 +43,8 @@ RE_INCLUDE_SELECT = re.compile(r'INCLUDE\s+SELECT\s+(.*)$')
 
 # Reference to a table in a database \1 is the database \2 is the table name
 RE_DB_TABLESPEC = re.compile(r'([A-Za-z_]\w*)\.([A-Za-z_]\w*)')
+# Remove the test_ prefix from a string
+RE_NON_TEST = re.compile(r'^test_')
 
 
 def create_database(created_databases, name):
@@ -148,7 +150,8 @@ def make_db_re(dbs):
     """Return a compiled regular expression for identifying the
     databases passed in the array"""
     if len(dbs) > 0:
-        database_re = r'\b(' + '|'.join(dbs) + r')\.'
+        non_test_dbs = [RE_NON_TEST.sub('', x) for x in dbs]
+        database_re = r'\b(' + '|'.join(non_test_dbs) + r')\.'
         print('-- Database RE: ' + database_re)
     else:
         # This RE cannot match any string
