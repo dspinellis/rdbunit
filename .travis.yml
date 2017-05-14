@@ -2,10 +2,13 @@ language: python
 
 python:
   - "2.7"
-  - "3.6"
+  - "3.5"
 
 addons:
   apt_packages:
     - sqlite3
+
+before_install:
+    - pip install pep8 pylint
 
 script: make qa

@@ -17,4 +17,4 @@ qa:
 	./runtest.sh python $(EGTEST)
 	./runtest.sh python3 $(EGTEST)
 	pep8 rdbunit.py
-	pylint rdbunit.py
+	pylint -r n rdbunit.py
