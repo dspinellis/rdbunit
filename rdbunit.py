@@ -47,12 +47,50 @@ RE_DB_TABLESPEC = re.compile(r'([A-Za-z_]\w*)\.([A-Za-z_]\w*)')
 RE_NON_TEST = re.compile(r'^test_')
 
 
-def create_database(created_databases, name):
+class DatabaseMySQL(object):
+    """SQL-specific commands for MySQL"""
+    @staticmethod
+    def drop(name):
+        """Remove the specified database"""
+        print('DROP DATABASE IF EXISTS ' + name + ';')
+
+    @staticmethod
+    def create(name):
+        """Create the specified database"""
+        print('CREATE DATABASE ' + name + ';')
+
+    @staticmethod
+    def use(name):
+        """Use by default the specified database"""
+        print('USE ' + name + ';')
+
+
+class DatabaseSQLite(object):
+    """SQL-specific commands for SQLite"""
+    @staticmethod
+    def drop(name):
+        """Remove the specified database"""
+        # pylint: disable=unused-argument
+        return
+
+    @staticmethod
+    def create(name):
+        """Create the specified database"""
+        print('ATTACH DATABASE ":memory:" AS ' + name + ';')
+
+    @staticmethod
+    def use(name):
+        """Use by default the specified database"""
+        # pylint: disable=unused-argument
+        return
+
+
+def create_database(dbengine, created_databases, name):
     """Create a database with the specified name"""
     if name is None or name in created_databases:
         return
-    print('DROP DATABASE IF EXISTS ' + name + ';')
-    print('CREATE DATABASE ' + name + ';')
+    dbengine.drop(name)
+    dbengine.create(name)
     if name != 'default':
         created_databases.append(name)
 
@@ -128,10 +166,16 @@ def create_table(table_name, column_names, values):
 def create_test_cases(args, test_name, file_input):
     """Create the test cases with the specified name in input"""
     print('-- Input from ' + test_name)
+    if args.database == 'mysql':
+        dbengine = DatabaseMySQL()
+    elif args.database == 'sqlite':
+        dbengine = DatabaseSQLite()
+    else:
+        sys.exit('Unsupported database: ' + args.database)
     if not args.existing_database:
-        create_database([], 'test_default')
-        print('USE test_default;')
-    process_test(test_name, file_input)
+        create_database(dbengine, [], 'test_default')
+        dbengine.use('test_default')
+    process_test(dbengine, test_name, file_input)
 
 
 def process_sql(file_name, db_re):
@@ -140,7 +184,7 @@ def process_sql(file_name, db_re):
     with open(file_name) as query:
         for line in query:
             line = line.rstrip()
-            line = db_re.sub(r'\btest_\1.', line)
+            line = db_re.sub(r'test_\1.', line)
             print(line)
 
 
@@ -213,16 +257,17 @@ def file_to_list(file_input):
     return result
 
 
-def create_databases(test_spec, created_databases):
+def create_databases(dbengine, test_spec, created_databases):
     """Scan the file for the databases to create and update
     created_databases with their names"""
     for line in test_spec:
         matched = RE_DB_TABLESPEC.match(line)
         if matched is not None:
-            create_database(created_databases, 'test_' + matched.group(1))
+            create_database(dbengine, created_databases,
+                            'test_' + matched.group(1))
 
 
-def process_test(test_name, test_spec):
+def process_test(dbengine, test_name, test_spec):
     """Process the specified input stream.
     Return a regular expression matching constructed databases,
     when the postconditions line has been reached."""
@@ -237,7 +282,7 @@ def process_test(test_name, test_spec):
     column_names = []
 
     test_spec = file_to_list(test_spec)
-    create_databases(test_spec, created_databases)
+    create_databases(dbengine, test_spec, created_databases)
     for line in test_spec:
         line = line.rstrip()
         if line == '' or line[0] == '#':
@@ -349,6 +394,10 @@ def main():
     """Program entry point: parse arguments and create test cases"""
     parser = argparse.ArgumentParser(
         description='Relational database query unity testing')
+    parser.add_argument('-d', '--database',
+                        help='Database to use; one of sqlite, mysql',
+                        default='mysql')
+
     parser.add_argument('-e', '--existing-database',
                         help='Use existing database; do not create test one',
                         action='store_true')
