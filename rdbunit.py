@@ -55,9 +55,14 @@ class DatabaseMySQL(object):
         print('DROP DATABASE IF EXISTS ' + name + ';')
 
     @staticmethod
-    def create(name):
+    def create_db(name):
         """Create the specified database"""
         print('CREATE DATABASE ' + name + ';')
+
+    @staticmethod
+    def create_view(name):
+        """Create the specified view"""
+        print('CREATE VIEW ' + name + ' AS')
 
     @staticmethod
     def use(name):
@@ -74,9 +79,14 @@ class DatabaseSQLite(object):
         return
 
     @staticmethod
-    def create(name):
+    def create_db(name):
         """Create the specified database"""
         print('ATTACH DATABASE ":memory:" AS ' + name + ';')
+
+    @staticmethod
+    def create_view(name):
+        """Create the specified view"""
+        print('CREATE TEMP VIEW ' + name + ' AS')
 
     @staticmethod
     def use(name):
@@ -90,7 +100,7 @@ def create_database(dbengine, created_databases, name):
     if name is None or name in created_databases:
         return
     dbengine.drop(name)
-    dbengine.create(name)
+    dbengine.create_db(name)
     if name != 'default':
         created_databases.append(name)
 
@@ -305,7 +315,7 @@ def process_test(dbengine, test_name, test_spec):
                 state = 'sql'
             elif RE_INCLUDE_SELECT.match(line) is not None:
                 matched = RE_INCLUDE_SELECT.match(line)
-                print('CREATE VIEW test_select_result AS')
+                dbengine.create_view('test_select_result')
                 process_sql(matched.group(1), make_db_re(created_databases))
                 test_statement_type = 'select'
             elif RE_INCLUDE_CREATE.match(line) is not None:
