@@ -14,7 +14,12 @@ minimal ceremony: RDBUnit will automatically infer the types of the
 tables' fields.
 
 For complex relational OLAP queries *RDBUnit* can be combined particularly
-effectively with [simple-rolap](https://github.com/dspinellis/simple-rolap).
+effectively with the [simple-rolap](https://github.com/dspinellis/simple-rolap)
+relational online analytical processing framework.
+You can find a complete tutorial on using *RDBUnit* with *simple-rolap*
+for mining Git repositories in a
+[technical briefing](https://www.spinellis.gr/git-mine-briefing/)
+presented at the 2017 International Conference on Software Engineering.
 
 ## Installation
 * Clone this repository
