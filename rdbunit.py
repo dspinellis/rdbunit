@@ -79,6 +79,7 @@ class Database(object):
             return 'NULL'
         return 'TRUE'
 
+
 class DatabaseMySQL(Database):
     """SQL-specific commands for MySQL"""
     @staticmethod
@@ -154,6 +155,7 @@ class DatabaseSQLite(Database):
             return 'NULL'
         return '1'
 
+
 def create_database(dbengine, created_databases, name):
     """Create a database with the specified name"""
     if name is None or name in created_databases:
@@ -169,6 +171,7 @@ class SqlType(object):
     def __init__(self, dbengine, value):
         # pylint: disable=too-many-branches
         def boolean_value(val):
+            """Return the engine-specific Boolean representation of val."""
             return self.dbengine.boolean_value(val)
 
         def quoted_value(val):
@@ -238,7 +241,7 @@ def create_test_cases(args, test_name, file_input):
         dbengine = DatabaseSQLite()
     else:
         sys.exit('Unsupported database: ' + args.database)
-    dbengine.initialize();
+    dbengine.initialize()
     if not args.existing_database:
         create_database(dbengine, [], 'test_default')
         dbengine.use('test_default')
@@ -445,7 +448,8 @@ def process_test(dbengine, test_name, test_spec):
                 continue
             # Data
             if not table_created:
-                types = create_table(dbengine, 'test_expected', column_names, line)
+                types = create_table(dbengine, 'test_expected',
+                                     column_names, line)
                 table_created = True
             insert_values('test_expected', types, line)
         else:
@@ -462,8 +466,8 @@ def main():
     parser = argparse.ArgumentParser(
         description='Relational database query unity testing')
     parser.add_argument('-d', '--database',
-                        help='Database to use; one of sqlite, mysql, postgresql',
-                        default='mysql')
+                        help='Database to use;' +
+                        'one of sqlite, mysql, postgresql', default='mysql')
 
     parser.add_argument('-e', '--existing-database',
                         help='Use existing database; do not create test one',
