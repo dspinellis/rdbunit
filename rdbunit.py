@@ -15,6 +15,9 @@
 # limitations under the License.
 #
 
+# Disable useless object inheritance for compatibility with Python 2
+# pylint: disable=R0205
+
 """
 SQL Unit Test runner
 
@@ -75,7 +78,7 @@ class Database(object):
         """Return the SQL representation of a Boolean value."""
         if val.lower() == 'false':
             return 'FALSE'
-        elif val.lower() == 'null':
+        if val.lower() == 'null':
             return 'NULL'
         return 'TRUE'
 
@@ -110,7 +113,6 @@ class DatabasePostgreSQL(Database):
         """Issue engine-specific initialization commands"""
         # Don't show warnings when IF EXISTS doesn't exist
         print("SET client_min_messages='ERROR';")
-        return
 
     @staticmethod
     def drop(name):
@@ -151,7 +153,7 @@ class DatabaseSQLite(Database):
         SQLite requires integers."""
         if val.lower() == 'false':
             return '0'
-        elif val.lower() == 'null':
+        if val.lower() == 'null':
             return 'NULL'
         return '1'
 
