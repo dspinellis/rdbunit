@@ -18,9 +18,13 @@
 """
 SQL Unit Test runner
 
-Run as:
-python rdbunit.py [-e] "leader_commits_nl_comments.rdbu" |
+Run examples:
+python rdbunit.py [-e] leader_commits_nl_comments.rdbu |
 mysql -u root -p$DBPASS -N
+
+python rdbunit.py --database=postgresql communication_report.rdbu |
+psql -U ght -h 127.0.0.1 -t -q ghtorrent
+
 """
 
 from __future__ import absolute_import
@@ -50,6 +54,11 @@ RE_NON_TEST = re.compile(r'^test_')
 class DatabaseMySQL(object):
     """SQL-specific commands for MySQL"""
     @staticmethod
+    def initialize():
+        """Issue engine-specific initialization commands"""
+        return
+
+    @staticmethod
     def drop(name):
         """Remove the specified database"""
         print('DROP DATABASE IF EXISTS ' + name + ';')
@@ -70,8 +79,43 @@ class DatabaseMySQL(object):
         print('USE ' + name + ';')
 
 
+class DatabasePostgreSQL(object):
+    """SQL-specific commands for PostgreSQL"""
+    @staticmethod
+    def initialize():
+        """Issue engine-specific initialization commands"""
+        # Don't show warnings when IF EXISTS doesn't exist
+        print("SET client_min_messages='ERROR';")
+        return
+
+    @staticmethod
+    def drop(name):
+        """Remove the specified database"""
+        print('DROP SCHEMA IF EXISTS ' + name + ' CASCADE;')
+
+    @staticmethod
+    def create_db(name):
+        """Create the specified database"""
+        print('CREATE SCHEMA ' + name + ';')
+
+    @staticmethod
+    def create_view(name):
+        """Create the specified view"""
+        print('CREATE VIEW ' + name + ' AS')
+
+    @staticmethod
+    def use(name):
+        """Use by default the specified database"""
+        print('SET search_path TO ' + name + ';')
+
+
 class DatabaseSQLite(object):
     """SQL-specific commands for SQLite"""
+    @staticmethod
+    def initialize():
+        """Issue engine-specific initialization commands"""
+        return
+
     @staticmethod
     def drop(name):
         """Remove the specified database"""
@@ -178,10 +222,13 @@ def create_test_cases(args, test_name, file_input):
     print('-- Input from ' + test_name)
     if args.database == 'mysql':
         dbengine = DatabaseMySQL()
+    elif args.database == 'postgresql':
+        dbengine = DatabasePostgreSQL()
     elif args.database == 'sqlite':
         dbengine = DatabaseSQLite()
     else:
         sys.exit('Unsupported database: ' + args.database)
+    dbengine.initialize();
     if not args.existing_database:
         create_database(dbengine, [], 'test_default')
         dbengine.use('test_default')
@@ -397,7 +444,7 @@ def process_test(dbengine, test_name, test_spec):
         sys.exit('Unterminated state: ' + state)
 
     # Display number of executed test cases
-    print('SELECT "1..{}";'.format(test_number - 1))
+    print("SELECT '1..{}';".format(test_number - 1))
 
 
 def main():
@@ -405,7 +452,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='Relational database query unity testing')
     parser.add_argument('-d', '--database',
-                        help='Database to use; one of sqlite, mysql',
+                        help='Database to use; one of sqlite, mysql, postgresql',
                         default='mysql')
 
     parser.add_argument('-e', '--existing-database',
