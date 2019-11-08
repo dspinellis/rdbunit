@@ -51,13 +51,36 @@ RE_DB_TABLESPEC = re.compile(r'([A-Za-z_]\w*)\.([A-Za-z_]\w*)')
 RE_NON_TEST = re.compile(r'^test_')
 
 
-class DatabaseMySQL(object):
-    """SQL-specific commands for MySQL"""
+class Database(object):
+    """Generic database commands"""
     @staticmethod
     def initialize():
         """Issue engine-specific initialization commands"""
         return
 
+    @staticmethod
+    def drop(name):
+        """Remove the specified database"""
+        # pylint: disable=unused-argument
+        return
+
+    @staticmethod
+    def use(name):
+        """Use by default the specified database"""
+        # pylint: disable=unused-argument
+        return
+
+    @staticmethod
+    def boolean_value(val):
+        """Return the SQL representation of a Boolean value."""
+        if val.lower() == 'false':
+            return 'FALSE'
+        elif val.lower() == 'null':
+            return 'NULL'
+        return 'TRUE'
+
+class DatabaseMySQL(Database):
+    """SQL-specific commands for MySQL"""
     @staticmethod
     def drop(name):
         """Remove the specified database"""
@@ -79,7 +102,7 @@ class DatabaseMySQL(object):
         print('USE ' + name + ';')
 
 
-class DatabasePostgreSQL(object):
+class DatabasePostgreSQL(Database):
     """SQL-specific commands for PostgreSQL"""
     @staticmethod
     def initialize():
@@ -109,19 +132,8 @@ class DatabasePostgreSQL(object):
         print('SET search_path TO ' + name + ';')
 
 
-class DatabaseSQLite(object):
+class DatabaseSQLite(Database):
     """SQL-specific commands for SQLite"""
-    @staticmethod
-    def initialize():
-        """Issue engine-specific initialization commands"""
-        return
-
-    @staticmethod
-    def drop(name):
-        """Remove the specified database"""
-        # pylint: disable=unused-argument
-        return
-
     @staticmethod
     def create_db(name):
         """Create the specified database"""
@@ -133,11 +145,14 @@ class DatabaseSQLite(object):
         print('CREATE TEMP VIEW ' + name + ' AS')
 
     @staticmethod
-    def use(name):
-        """Use by default the specified database"""
-        # pylint: disable=unused-argument
-        return
-
+    def boolean_value(val):
+        """Return the SQL representation of a Boolean value.
+        SQLite requires integers."""
+        if val.lower() == 'false':
+            return '0'
+        elif val.lower() == 'null':
+            return 'NULL'
+        return '1'
 
 def create_database(dbengine, created_databases, name):
     """Create a database with the specified name"""
@@ -151,16 +166,10 @@ def create_database(dbengine, created_databases, name):
 
 class SqlType(object):
     """An SQL type's name and its value representation"""
-    def __init__(self, value):
+    def __init__(self, dbengine, value):
         # pylint: disable=too-many-branches
         def boolean_value(val):
-            """Return the SQL representation of a Boolean value.
-            Use integers for SQLite compatibility."""
-            if val.lower() == 'false':
-                return '0'
-            elif val.lower() == 'null':
-                return 'NULL'
-            return '1'
+            return self.dbengine.boolean_value(val)
 
         def quoted_value(val):
             """Return the SQL representation of a quoted value."""
@@ -174,6 +183,7 @@ class SqlType(object):
                 return 'NULL'
             return str(val)
 
+        self.dbengine = dbengine
         if RE_INTEGER.match(value):
             self.name = 'INTEGER'
             self.sql_repr = unquoted_value
@@ -205,12 +215,12 @@ class SqlType(object):
         return self.sql_repr(val)
 
 
-def create_table(table_name, column_names, values):
+def create_table(dbengine, table_name, column_names, values):
     """Create the specified table taking as a hint for types the values.
     Return the type objects associated with the values."""
     print('DROP TABLE IF EXISTS ' + table_name + ';')
     # Create data type objects from the values
-    types = [SqlType(x) for x in shlex.split(values)]
+    types = [SqlType(dbengine, x) for x in shlex.split(values)]
     print('CREATE TABLE ' + table_name + '(' +
           ', '.join([n + ' ' + t.get_name() for n, t in zip(
               column_names, types)]) + ');')
@@ -399,7 +409,7 @@ def process_test(dbengine, test_name, test_spec):
                 if not table_name:
                     syntax_error(state, 'Attempt to provide data ' +
                                  'without specifying a table name')
-                types = create_table(table_name, column_names, line)
+                types = create_table(dbengine, table_name, column_names, line)
                 table_created = True
             insert_values(table_name, types, line)
 
@@ -435,7 +445,7 @@ def process_test(dbengine, test_name, test_spec):
                 continue
             # Data
             if not table_created:
-                types = create_table('test_expected', column_names, line)
+                types = create_table(dbengine, 'test_expected', column_names, line)
                 table_created = True
             insert_values('test_expected', types, line)
         else:
