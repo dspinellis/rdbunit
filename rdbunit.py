@@ -16,7 +16,6 @@
 #
 
 # Disable useless object inheritance for compatibility with Python 2
-# pylint: disable=R0205
 
 """
 SQL Unit Test runner
@@ -281,15 +280,13 @@ def verify_content(number, test_name, case_name):
           (SELECT COUNT(*) FROM (
             SELECT * FROM test_expected
             UNION
-            SELECT * FROM {}
+            SELECT * FROM {0}
           ) AS u1) = (SELECT COUNT(*) FROM test_expected) AND
           (SELECT COUNT(*) FROM (
             SELECT * FROM test_expected
             UNION
-            SELECT * FROM {}
-          ) AS u2) = (SELECT COUNT(*) FROM {})""".format(case_name,
-                                                         case_name,
-                                                         case_name))
+            SELECT * FROM {0}
+          ) AS u2) = (SELECT COUNT(*) FROM {0})""".format(case_name))
     print(("""
         THEN 'ok {} - {}: {}' ELSE """ +
            """'not ok {} - {}: {}' END;\n""").format(number, test_name,
