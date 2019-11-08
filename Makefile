@@ -10,8 +10,17 @@ install: rdbunit.py
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/rdbunit
 
-test:
+postgresql-test:
+	cd examples && ../rdbunit.py --database=postgresql *.rdbu | \
+		psql -U ght -h 127.0.0.1 -t -q ghtorrent
+
+mysql-test:
 	cd examples && ../rdbunit.py *.rdbu | mysql -u root -p$$DBPASS -N
+
+sqlite-test:
+	cd examples && for i in *.rdbu ; do \
+	  ../rdbunit.py --database=sqlite $$i | sqlite3 ; \
+	done
 
 qa:
 	./runtest.sh python $(EGTEST)
