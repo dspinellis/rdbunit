@@ -4,7 +4,7 @@ PYTHON="$1"
 shift
 
 for i ; do
-  if ! $PYTHON rdbunit.py -e "examples/$i.rdbu" >script.sql ; then
+  if ! $PYTHON rdbunit.py --database=sqlite -e "examples/$i.rdbu" >script.sql ; then
     echo "Script failed" 1>&2
     exit 1
   fi
