@@ -19,5 +19,3 @@ create table leadership.leader_commits_nl_comments AS
   ) as project_commits
 
   group by project_commits.project_id;
-
-alter table leadership.leader_commits_nl_comments add index(project_id);
