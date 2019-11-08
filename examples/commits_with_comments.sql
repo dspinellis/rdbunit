@@ -1,6 +1,6 @@
 -- Number of commits that have comments per project
 
-create table leadership.commits_with_comments ENGINE=MyISAM AS
+create table leadership.commits_with_comments AS
   select project_commits.project_id as project_id,
     count(*) as n
 

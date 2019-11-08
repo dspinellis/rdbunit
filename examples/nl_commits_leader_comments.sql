@@ -1,6 +1,6 @@
 -- Commits by non-leaders commented by the leader
 
-create table leadership.nl_commits_leader_comments ENGINE=MyISAM AS
+create table leadership.nl_commits_leader_comments AS
   select project_commits.project_id as project_id,
     count(*) as n
 
