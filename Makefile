@@ -1,4 +1,4 @@
-PREFIX = /usr/local
+PREFIX?=/usr/local
 EGTEST=simple datatypes
 
 .PHONY: install
