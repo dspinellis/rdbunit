@@ -118,7 +118,7 @@ INCLUDE CREATE nl_commits_leader_comments.sql
 
 ## Unit testing
 To run the tests run *RDBUnit* piping its output to one of the supported
-databases (current *MySQL* and *sqLite*).
+databases (current *MySQL*, *PostgreSQL*, and *sqLite*).
 A number of command-line flags allow you to tailor the operation of
 *RDBUnit*.
 When running, *RDBUnit* will report on its output something like
@@ -138,10 +138,22 @@ ok 1 - recent_commit_projects.rdbu: test_stratsel.recent_commit_projects
 
 ### Execution example (MySQL)
 ```sh
-$ rdbunit.py commits_comments.rdbu | mysql -u root -p -N
+$ rdbunit commits_comments.rdbu | mysql -u root -p -N
 Enter password:
 ok 1 - commits_comments.rdbu: test_leadership.nl_commits_leader_comments
 ok 2 - commits_comments.rdbu: test_leadership.leader_commits_nl_comments
 ok 3 - commits_comments.rdbu: test_leadership.commits_with_comments
 1..3
+```
+
+### Execution example (PostgreSQL)
+```sh
+$ rdbunit --database=postgresql commits_comments.rdbu | psql -U ght -h 127.0.0.1 -t -q ghtorrent
+ ok 1 - commits_comments.rdbu: test_leadership.nl_commits_leader_comments
+
+ ok 2 - commits_comments.rdbu: test_leadership.leader_commits_nl_comments
+
+ ok 3 - commits_comments.rdbu: test_leadership.commits_with_comments
+
+ 1..3
 ```
