@@ -83,6 +83,7 @@ END
 ```
 
 ### Results example (named table)
+Named table results are used with `CREATE` queries.
 ```
 BEGIN RESULT
 leadership.nl_commits_leader_comments:
@@ -92,6 +93,7 @@ END
 ```
 
 ### Results example (unnamed set)
+Unnamed set results are used with `SELECT` queries.
 ```
 BEGIN RESULT
 name    registered      value   reg_date        a
