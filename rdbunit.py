@@ -111,7 +111,7 @@ class DatabasePostgreSQL(Database):
     def initialize():
         """Issue engine-specific initialization commands"""
         # Don't show warnings when IF EXISTS doesn't exist
-        print("SET client_min_messages='ERROR';")
+        print("\\set ON_ERROR_STOP true\nSET client_min_messages='ERROR';")
 
     @staticmethod
     def drop(name):
