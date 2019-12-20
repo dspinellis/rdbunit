@@ -399,6 +399,7 @@ def process_test(dbengine, test_name, test_spec):
         elif state == 'setup':
             if line == 'END':
                 state = 'initial'
+                table_name = None
                 continue
             # Table name
             if line[-1] == ':':
@@ -435,6 +436,9 @@ def process_test(dbengine, test_name, test_spec):
         # Check a result
         elif state == 'result':
             if line == 'END':
+                if not table_name:
+                    syntax_error(state, 'Attempt to provide data ' +
+                                 'without specifying a table name')
                 verify_content(test_number, test_name, table_name)
                 test_number += 1
                 state = 'initial'
