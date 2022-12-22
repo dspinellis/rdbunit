@@ -23,7 +23,6 @@ sqlite-test:
 	done
 
 qa:
-	./runtest.sh python $(EGTEST)
 	./runtest.sh python3 $(EGTEST)
 	pycodestyle rdbunit.py
 	pylint -r n rdbunit.py

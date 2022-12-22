@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
-# Copyright 2017 Diomidis Spinellis
+# Copyright 2017-2022 Diomidis Spinellis
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -287,11 +287,9 @@ def verify_content(number, test_name, case_name):
             UNION
             SELECT * FROM {0}
           ) AS u2) = (SELECT COUNT(*) FROM {0})""".format(case_name))
-    print(("""
-        THEN 'ok {} - {}: {}' ELSE """ +
-           """'not ok {} - {}: {}' END;\n""").format(number, test_name,
-                                                     case_name, number,
-                                                     test_name, case_name))
+    print(f"""THEN 'ok {number} - {test_name}: {case_name}' ELSE
+'not ok {number} - {test_name}: {case_name}' END;\n"""
+          )
 
 
 def test_table_name(line):
@@ -461,7 +459,7 @@ def process_test(dbengine, test_name, test_spec):
         sys.exit('Unterminated state: ' + state)
 
     # Display number of executed test cases
-    print("SELECT '1..{}';".format(test_number - 1))
+    print(f"SELECT '1..{test_number - 1}';")
 
 
 def main():
