@@ -246,7 +246,7 @@ def create_test_cases(args, test_name, file_input):
     if not args.existing_database:
         create_database(dbengine, [], 'test_default')
         dbengine.use('test_default')
-    process_test(dbengine, test_name, file_input)
+    process_test(args, dbengine, test_name, file_input)
 
 
 def process_sql(file_name, db_re):
@@ -272,7 +272,7 @@ def make_db_re(dbs):
     return re.compile(database_re, re.IGNORECASE)
 
 
-def verify_content(number, test_name, case_name):
+def verify_content(args, number, test_name, case_name):
     """Verify that the specified table has the same content as the
     table test_expected"""
     print("""
@@ -290,6 +290,8 @@ def verify_content(number, test_name, case_name):
     print(f"""THEN 'ok {number} - {test_name}: {case_name}' ELSE
 'not ok {number} - {test_name}: {case_name}' END;\n"""
           )
+    if args.results:
+        print(f"SELECT * FROM {case_name};")
 
 
 def test_table_name(line):
@@ -334,12 +336,13 @@ def create_databases(dbengine, test_spec, created_databases):
                             'test_' + matched.group(1))
 
 
-def process_test(dbengine, test_name, test_spec):
+def process_test(args, dbengine, test_name, test_spec):
     """Process the specified input stream.
     Return a regular expression matching constructed databases,
     when the postconditions line has been reached."""
     # pylint: disable=too-many-statements
     # pylint: disable=too-many-branches
+    # pylint: disable=too-many-locals
     state = 'initial'
     test_number = 1
     # Created databases
@@ -437,7 +440,7 @@ def process_test(dbengine, test_name, test_spec):
                 if not table_name:
                     syntax_error(state, 'Attempt to provide data ' +
                                  'without specifying a table name')
-                verify_content(test_number, test_name, table_name)
+                verify_content(args, test_number, test_name, table_name)
                 test_number += 1
                 state = 'initial'
                 continue
@@ -472,6 +475,10 @@ def main():
 
     parser.add_argument('-e', '--existing-database',
                         help='Use existing database; do not create test one',
+                        action='store_true')
+
+    parser.add_argument('-r', '--results',
+                        help='Show the result of each test',
                         action='store_true')
 
     parser.add_argument('test_script',

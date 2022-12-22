@@ -132,6 +132,11 @@ A final line will list the number of succeeding and failing test cases.
 By default *RDBUnit* creates and operates on temporary databases,
 whose name is prefixed with the word `test_`.
 
+By specifying the `--results` option (or the equivalent `-r` short option)
+you can direct _rdbunit_ to display the table generated for each test.
+This is useful for debugging test failures or for generating reference data
+(after suitable manual verification).
+
 ### Execution example (SQLite)
 ```sh
 $ rdbunit --database=sqlite recent_commit_projects.rdbu | sqlite3
