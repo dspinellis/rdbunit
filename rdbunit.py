@@ -32,6 +32,7 @@ psql -U ght -h 127.0.0.1 -t -q ghtorrent
 from __future__ import absolute_import
 from __future__ import print_function
 import argparse
+import os
 import re
 import shlex
 import sys
@@ -244,8 +245,11 @@ def create_test_cases(args, test_name, file_input):
         sys.exit('Unsupported database: ' + args.database)
     dbengine.initialize()
     if not args.existing_database:
-        create_database(dbengine, [], 'test_default')
-        dbengine.use('test_default')
+        database_name = os.getenv('ROLAPDB')
+        if not database_name:
+            database_name = 'test_default'
+        create_database(dbengine, [], database_name)
+        dbengine.use(database_name)
     process_test(args, dbengine, test_name, file_input)
 
 
@@ -470,7 +474,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='Relational database query unity testing')
     parser.add_argument('-d', '--database',
-                        help='Database to use;' +
+                        help='Database engine to use;' +
                         'one of sqlite, mysql, postgresql', default='mysql')
 
     parser.add_argument('-e', '--existing-database',
