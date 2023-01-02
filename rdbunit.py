@@ -48,6 +48,10 @@ RE_BOOLEAN = re.compile(r'(true|false)$', re.IGNORECASE)
 RE_INCLUDE_CREATE = re.compile(r'INCLUDE\s+CREATE\s+(.*)$')
 RE_INCLUDE_SELECT = re.compile(r'INCLUDE\s+SELECT\s+(.*)$')
 
+RE_FULL_CREATE_INDEX = re.compile(r'CREATE\s+INDEX\s+[^;]+;', re.IGNORECASE)
+RE_PARTIAL_CREATE_INDEX = re.compile(r'CREATE\s+INDEX\b[^;]*$', re.IGNORECASE)
+RE_CLEAR_TO_SEMICOLON = re.compile(r'^[^;]*;')
+
 # Reference to a table in a database \1 is the database \2 is the table name
 RE_DB_TABLESPEC = re.compile(r'([A-Za-z_]\w*)\.([A-Za-z_]\w*)')
 # Remove the test_ prefix from a string
@@ -259,6 +263,20 @@ def process_sql(file_name, db_re):
     with open(file_name) as query:
         for line in query:
             line = line.rstrip()
+
+            # Remove index creation in single line
+            line = re.sub(RE_FULL_CREATE_INDEX, '', line)
+
+            # Remove CREATE INDEX statements spanning multiple lines
+            if RE_PARTIAL_CREATE_INDEX.search(line) is not None:
+                first_part = re.sub(RE_PARTIAL_CREATE_INDEX, '', line)
+                for line in query:
+                    # Skip lines as INDEX statment continues
+                    if line.find(';') == -1:
+                        continue
+                    break
+                line = first_part + re.sub(RE_CLEAR_TO_SEMICOLON, '', line)
+
             line = db_re.sub(r'test_\1.', line)
             print(line)
 
