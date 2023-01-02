@@ -4,7 +4,7 @@ EGTEST=simple datatypes
 .PHONY: install
 install: rdbunit.py
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp $< $(DESTDIR)$(PREFIX)/bin/rdbunit
+	install $< $(DESTDIR)$(PREFIX)/bin/rdbunit
 
 .PHONY: uninstall
 uninstall:
