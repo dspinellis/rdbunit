@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2017-2022 Diomidis Spinellis
+# Copyright 2017-2023 Diomidis Spinellis
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@ def create_test_cases(args, test_name, file_input):
 def process_sql(file_name, db_re):
     """Process an SQL statement, substituting referenced databases specified
     in the db_re compiled regular expression with the corresponding test one"""
-    with open(file_name) as query:
+    with open(file_name, encoding="UTF-8") as query:
         for line in query:
             line = line.rstrip()
 
@@ -270,12 +270,15 @@ def process_sql(file_name, db_re):
             # Remove CREATE INDEX statements spanning multiple lines
             if RE_PARTIAL_CREATE_INDEX.search(line) is not None:
                 first_part = re.sub(RE_PARTIAL_CREATE_INDEX, '', line)
+                last_line = ''
                 for line in query:
                     # Skip lines as INDEX statment continues
                     if line.find(';') == -1:
                         continue
+                    last_line = line
                     break
-                line = first_part + re.sub(RE_CLEAR_TO_SEMICOLON, '', line)
+                line = first_part + re.sub(RE_CLEAR_TO_SEMICOLON, '',
+                                           last_line)
 
             line = db_re.sub(r'test_\1.', line)
             print(line)
@@ -297,18 +300,18 @@ def make_db_re(dbs):
 def verify_content(args, number, test_name, case_name):
     """Verify that the specified table has the same content as the
     table test_expected"""
-    print("""
+    print(f"""
         SELECT CASE WHEN
           (SELECT COUNT(*) FROM (
             SELECT * FROM test_expected
             UNION
-            SELECT * FROM {0}
+            SELECT * FROM {case_name}
           ) AS u1) = (SELECT COUNT(*) FROM test_expected) AND
           (SELECT COUNT(*) FROM (
             SELECT * FROM test_expected
             UNION
-            SELECT * FROM {0}
-          ) AS u2) = (SELECT COUNT(*) FROM {0})""".format(case_name))
+            SELECT * FROM {case_name}
+          ) AS u2) = (SELECT COUNT(*) FROM {case_name})""")
     print(f"""THEN 'ok {number} - {test_name}: {case_name}' ELSE
 'not ok {number} - {test_name}: {case_name}' END;\n"""
           )
@@ -513,7 +516,7 @@ def main():
         if script_name == '-':
             create_test_cases(args, '<stdin>', sys.stdin)
         else:
-            with open(script_name) as test_input:
+            with open(script_name, encoding="UTF-8") as test_input:
                 create_test_cases(args, script_name, test_input)
 
 
