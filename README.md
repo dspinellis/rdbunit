@@ -18,8 +18,12 @@ effectively with the [simple-rolap](https://github.com/dspinellis/simple-rolap)
 relational online analytical processing framework.
 You can find a complete tutorial on using *RDBUnit* with *simple-rolap*
 for mining Git repositories in a
-[technical briefing](https://www.spinellis.gr/git-mine-briefing/)
+[technical briefing](https://doi.org/10.5281/zenodo.7513793)
 presented at the 2017 International Conference on Software Engineering.
+
+You can cite this work as follows.
+
+Georgios Gousios and Diomidis Spinellis. Mining software engineering data from GitHub. In *Proceedings of the 39th International Conference on Software Engineering Companion, ICSE-C '17*, pages 501–502, Piscataway, NJ, USA, May 2017. IEEE Press. Technical Briefing. [doi:10.1109/ICSE-C.2017.164](https://dx.doi.org/10.1109%2FICSE-C.2017.164)
 
 ## Installation
 * Clone this repository
