@@ -52,6 +52,8 @@ RE_FULL_CREATE_INDEX = re.compile(r'CREATE\s+INDEX\s+[^;]+;', re.IGNORECASE)
 RE_PARTIAL_CREATE_INDEX = re.compile(r'CREATE\s+INDEX\b[^;]*$', re.IGNORECASE)
 RE_CLEAR_TO_SEMICOLON = re.compile(r'^[^;]*;')
 
+RE_FULL_ATTACH_DATABASE = re.compile(r'ATTACH\s+[^;]+;', re.IGNORECASE)
+
 # Reference to a table in a database \1 is the database \2 is the table name
 RE_DB_TABLESPEC = re.compile(r'([A-Za-z_]\w*)\.([A-Za-z_]\w*)')
 # Remove the test_ prefix from a string
@@ -264,8 +266,9 @@ def process_sql(file_name, db_re):
         for line in query:
             line = line.rstrip()
 
-            # Remove index creation in single line
+            # Remove index creation and database attachment in single line
             line = re.sub(RE_FULL_CREATE_INDEX, '', line)
+            line = re.sub(RE_FULL_ATTACH_DATABASE, '', line)
 
             # Remove CREATE INDEX statements spanning multiple lines
             if RE_PARTIAL_CREATE_INDEX.search(line) is not None:
