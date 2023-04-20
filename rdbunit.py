@@ -468,6 +468,10 @@ def process_test(args, dbengine, test_name, test_spec):
                 if not table_name:
                     syntax_error(state, 'Attempt to provide data ' +
                                  'without specifying a table name')
+                if not table_created:
+                    types = create_table(dbengine, 'test_expected',
+                                         column_names, line)
+                    table_created = True
                 verify_content(args, test_number, test_name, table_name)
                 test_number += 1
                 state = 'initial'
