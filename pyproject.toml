@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rdbunit"
+version = "1.1.0"
+authors = [
+  { name="Diomidis Spinellis", email="dds@aueb.gr" },
+]
+description = "RDBUnit is a unit testing framework for relational database queries."
+readme = "README.md"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+keywords = ["unit testing", "SQL", "mySQL", "PostgreSQL", "SQLite"]
+homepage = "https://github.com/dspinellis/rdbunit"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS",
+    "Operating System :: Unix",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Testing :: Unit"
+]
+
+[project.urls]
+Homepage = "https://github.com/dspinellis/rdbunit"
+Documentation = "https://github.com/dspinellis/rdbunit"
+Repository = "https://github.com/dspinellis/rdbunit.git"
+"Bug Tracker" = "https://github.com/dspinellis/rdbunit/issues"
+
+[project.scripts]
+rdbunit = "rdbunit.__main__:main"
