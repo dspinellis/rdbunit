@@ -26,12 +26,19 @@ You can cite this work as follows.
 Georgios Gousios and Diomidis Spinellis. Mining software engineering data from GitHub. In *Proceedings of the 39th International Conference on Software Engineering Companion, ICSE-C '17*, pages 501–502, Piscataway, NJ, USA, May 2017. IEEE Press. Technical Briefing. [doi:10.1109/ICSE-C.2017.164](https://dx.doi.org/10.1109%2FICSE-C.2017.164)
 
 ## Installation
+
+### Using Pip
+```sh
+pip install rdbunit
+```
+
+### From source
 * Clone this repository
-* Run make install
 ```
 git clone --depth=1 https://github.com/dspinellis/rdbunit.git
 cd rdbunit
-sudo make install
+pipenv shell
+pip install .
 ```
 
 ## Test specification
