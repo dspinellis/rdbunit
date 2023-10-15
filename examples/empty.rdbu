@@ -6,9 +6,9 @@ April	50
 END
 
 BEGIN SELECT
-SELECT month, revenue FROM sales WHERE revenue > 1000;
+SELECT month FROM sales WHERE revenue > 1000;
 END
 
 BEGIN RESULT
-month	revenue
+month
 END
