@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  build:
+  test-python-versions:
 
     runs-on: ubuntu-latest
     strategy:
@@ -28,7 +28,7 @@ jobs:
     - name: Test
       run: cd tests && ./test-parts.sh
 
-  qa:
+  code-quality:
     runs-on: ubuntu-latest
 
     steps:
@@ -51,3 +51,50 @@ jobs:
 
     - name: Check style with pycodestyle
       run: pipenv run pycodestyle src/rdbunit/__main__.py
+
+  test-databases:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install SQLite
+        run: sudo apt-get install -y sqlite3
+
+      - name: SQLite
+        run: cd tests && ./test-sqlite.sh
+
+      - name: PostgreSQL
+        env:
+          POSTGRES_USER: postgres
+          PGPASSWORD: postgres
+        run: cd tests && ./test-postgresql.sh
+
+      - name: mySQL
+        env:
+          MYSQL_ROOT_PASSWORD: password
+        run: cd tests && ./test-mysql.sh
