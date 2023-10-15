@@ -6,7 +6,7 @@
 # Fail on command errors and unset variables
 set -eu
 
-if [ -z "$POSTGRES_USER" ] ; then
+if [ -z "${POSTGRES_USER:-}" ] ; then
   export PGPASSWORD=$(openssl rand -base64 21)
 
   # Setup a PostgreSQL database for testing Rdbunit
@@ -22,10 +22,10 @@ fi
 
 
 # Run the tests
-cd ../examples
+cd examples
 for i in *.rdbu ; do
   ../src/rdbunit/__main__.py --database=postgresql $i |
-  if [ -n "$POSTGRES_USER" ] ; then
+  if [ -n "${POSTGRES_USER:-}" ] ; then
     psql -U "$POSTGRES_USER" -h 127.0.0.1 -p 5432 -t -q
   else
     psql -U rdbunit_user -d rdbunit_db -h localhost -t -q

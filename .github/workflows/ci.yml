@@ -26,7 +26,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Test
-      run: cd tests && ./test-parts.sh
+      run: tests/test-parts.sh
 
   code-quality:
     runs-on: ubuntu-latest
@@ -86,15 +86,15 @@ jobs:
         run: sudo apt-get install -y sqlite3
 
       - name: SQLite
-        run: cd tests && ./test-sqlite.sh
+        run: tests/test-sqlite.sh
 
       - name: PostgreSQL
         env:
           POSTGRES_USER: postgres
           PGPASSWORD: postgres
-        run: cd tests && ./test-postgresql.sh
+        run: tests/test-postgresql.sh
 
       - name: mySQL
         env:
           MYSQL_ROOT_PASSWORD: password
-        run: cd tests && ./test-mysql.sh
+        run: tests/test-mysql.sh

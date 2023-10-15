@@ -4,7 +4,7 @@
 #
 
 for i in simple datatypes ; do
-  if ! ../src/rdbunit/__main__.py --database=sqlite -e "../examples/$i.rdbu" >script.sql ; then
+  if ! src/rdbunit/__main__.py --database=sqlite -e "examples/$i.rdbu" >script.sql ; then
     echo "Script failed" 1>&2
     exit 1
   fi
