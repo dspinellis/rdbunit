@@ -274,11 +274,11 @@ def process_sql(file_name, db_re):
             if RE_PARTIAL_CREATE_INDEX.search(line) is not None:
                 first_part = re.sub(RE_PARTIAL_CREATE_INDEX, '', line)
                 last_line = ''
-                for line in query:
+                for query_line in query:
                     # Skip lines as INDEX statment continues
-                    if line.find(';') == -1:
+                    if query_line.find(';') == -1:
                         continue
-                    last_line = line
+                    last_line = query_line
                     break
                 line = first_part + re.sub(RE_CLEAR_TO_SEMICOLON, '',
                                            last_line)
