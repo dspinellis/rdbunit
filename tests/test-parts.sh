@@ -1,10 +1,10 @@
 #!/bin/sh
+#
+# Verify that the script and the database work as expected
+#
 
-PYTHON="$1"
-shift
-
-for i ; do
-  if ! $PYTHON rdbunit.py --database=sqlite -e "examples/$i.rdbu" >script.sql ; then
+for i in simple datatypes ; do
+  if ! ../src/rdbunit/__main__.py --database=sqlite -e "../examples/$i.rdbu" >script.sql ; then
     echo "Script failed" 1>&2
     exit 1
   fi

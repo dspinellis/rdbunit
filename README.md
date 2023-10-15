@@ -1,6 +1,7 @@
 #  RDBUnit: Unit testing for relational database queries
 
-[![Build Status](https://travis-ci.org/dspinellis/rdbunit.svg?branch=master)](https://travis-ci.org/dspinellis/rdbunit)
+![Build](https://github.com/dspinellis/rdbunit/actions/workflows/ci.yml/badge.svg)
+
 
 **RDBUnit** is a unit testing framework for relational database queries.
 It allows you to express in a simple way the setup prior to a query,
