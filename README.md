@@ -132,7 +132,7 @@ INCLUDE CREATE nl_commits_leader_comments.sql
 
 ## Unit testing
 To run the tests run *RDBUnit* piping its output to one of the supported
-databases (current *MySQL*, *PostgreSQL*, and *sqLite*).
+relational database systems (current *MySQL*, *PostgreSQL*, and *sqLite*).
 A number of command-line flags allow you to tailor the operation of
 *RDBUnit*.
 When running, *RDBUnit* will report on its output something like
@@ -176,3 +176,21 @@ $ rdbunit --database=postgresql commits_comments.rdbu | psql -U ght -h 127.0.0.1
 
  1..3
 ```
+
+## Development
+
+Contributions via GitHub pull requests are welcomed.
+Each contribution passes through continuous integration,
+which verifies the code's style (_pycodestyle_) and checks for errors
+(_pylint_).
+It also tests the input and output of _RDBunit_ and its operation on the
+three supported relational database systems.
+On a local host, after creating a virtual environment (`pipenv`),
+entering it (`pipenv shell`), and
+installing the required development dependencies (`pipenv install --dev`),
+you can run the following commands.
+
+* ``pycodestyle src/rdbunit/__main__.py`
+* `pylint src/rdbunit/__main__.py`
+* `tests/test-parts.sh`
+* `tests/test-sqlite.sh`
