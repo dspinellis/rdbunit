@@ -381,6 +381,7 @@ def process_test(args, dbengine, test_name, test_spec):
 
     test_spec = file_to_list(test_spec)
     create_databases(dbengine, test_spec, created_databases)
+    db_re = make_db_re(created_databases)
     for line in test_spec:
         line = line.rstrip()
         if line == '' or line[0] == '#':
@@ -393,12 +394,10 @@ def process_test(args, dbengine, test_name, test_spec):
                 state = 'setup'
                 table_name = None
             elif line == 'BEGIN CREATE':
-                db_re = make_db_re(created_databases)
                 test_statement_type = 'create'
                 state = 'sql'
             elif line == 'BEGIN SELECT':
                 print('CREATE VIEW test_select_result AS')
-                db_re = make_db_re(created_databases)
                 test_statement_type = 'select'
                 state = 'sql'
             elif RE_INCLUDE_SELECT.match(line) is not None:
