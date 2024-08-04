@@ -45,9 +45,15 @@ pip install .
 ## Test specification
 For every SQL query you want to test, create an *RDBUnit* file that
 specifies the query's input, execution, and expected result.
+The setup-query-results sequence can be specified multiple times within
+a test file.
 
 ### Simple example
 The following example illustrates this concept.
+
+#### Step 1: Create the unit test specification
+Create a file named `max_revenue.rdbu` with the following contents.
+
 ```
 BEGIN SETUP
 sales:
@@ -66,8 +72,17 @@ max_revenue
 END
 ```
 
-### Input file details
-The input and output and output are specified as table contents.
+#### Step 2: Run the unit test
+Run the unit test to see its result as follows.
+
+```
+$ rdbunit --database=sqlite max_revenue.rdbu | sqlite3
+ok 1 - max_revenue.rdbu: test_select_result
+1..1
+```
+
+### Table data details
+The input and output are specified as table contents.
 The input starts with a line containing the words `BEGIN SETUP`,
 while the results start with a line containing the words
 `BEGIN RESULTS`.
@@ -75,14 +90,15 @@ The input and output are specified by first giving a table's name,
 followed by a colon.
 The name may be prefixed by the name of a database where the table
 is to reside, followed by a dot.
-The next row contains the table's fields, separated by spaces.
-Then comes the table's data, which is terminated by a blank line,
+The next row contains the names of table's fields, separated by spaces.
+Then come the table's data, which are terminated by a blank line,
 or by the word `END`.
+The table data automatically derive the fields' data types.
+
 More than one table can be specified in the setup.
 In the results the table name is not specified, if the tested
 query is a selection statement, rather than a table or view creation.
-The setup-query-results sequence can be specified multiple times within
-a test file.
+
 
 ### Setup example
 ```
@@ -113,10 +129,20 @@ John    True            12      '2015-03-02'    Null
 END
 ```
 
-The query to test is either specified inline with a `BEGIN SELECT` (for
-selection queries) or `BEGIN CREATE` (for creation queries) statement,
-or by including a file through the corresponding `INCLUDE SELECT` or
+### Tested query
+The query to test is either specified inline
+with a `BEGIN SELECT` (for selection queries)
+or with `BEGIN CREATE` (for creation and insert or update queries)
+statement,
+or by specifying a file through the corresponding `INCLUDE SELECT` or
 `INCLUDE CREATE` statement.
+An `INCLUDE SELECT` or `INCLUDE CREATE` statement can be combined
+with a corresponding `BEGIN SELECT` or `BEGIN CREATE` statement
+to customize the query or database for the testing environment.
+For example,
+this may be needed to add a unique table index to simulate a
+corresponding primary key or to delete an input table row to
+obtain an empty table.
 
 ### Inline example
 ```
