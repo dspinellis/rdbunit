@@ -203,6 +203,41 @@ $ rdbunit --database=postgresql commits_comments.rdbu | psql -U ght -h 127.0.0.1
  1..3
 ```
 
+## Troubleshooting
+When unit tests fail you can troubleshoot them as follows.
+
+### Test fails due to a syntax error
+Example:
+```
+$ rdbunit --database=sqlite mytest.rdbu | sqlite3
+Error: near line 26: near ".": syntax error
+not ok 1 - mytest.rdbu: mytest
+1..1
+```
+Pipe the output of _rdbunit_ to `cat -n` to see the offending line.
+```
+$ rdbunit --database=sqlite mytest.rdbu | cat -n
+```
+
+## Test fails due to incorrect results
+Example:
+```
+$ rdbunit --database=sqlite fileid_to_global_map.rdbu | sqlite3
+not ok 1 - fileid_to_global_map.rdbu: fileid_to_global_map
+1..1
+```
+Re-run the specific test with the `--results` option to see the generated output.
+```
+$ rdbunit --database=sqlite --results fileid_to_global_map.rdbu | sqlite3
+not ok 1 - fileid_to_global_map.rdbu: fileid_to_global_map
+2|3|1
+2|5|2
+5|1|3
+5|2|1
+5|3|4
+1..1
+```
+
 ## Development
 
 Contributions via GitHub pull requests are welcomed.
