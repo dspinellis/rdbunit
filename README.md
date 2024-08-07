@@ -226,16 +226,28 @@ $ rdbunit --database=sqlite fileid_to_global_map.rdbu | sqlite3
 not ok 1 - fileid_to_global_map.rdbu: fileid_to_global_map
 1..1
 ```
-Re-run the specific test with the `--results` option to see the generated output.
+Re-run the specific test
+with the `--results` option to see the generated output or
+with the `--compare` option to see the difference in the obtained result sets.
 ```
 $ rdbunit --database=sqlite --results fileid_to_global_map.rdbu | sqlite3
 not ok 1 - fileid_to_global_map.rdbu: fileid_to_global_map
+Result set:
 2|3|1
 2|5|2
 5|1|3
 5|2|1
 5|3|4
 1..1
+
+$ rdbunit --database=sqlite fileid_to_global_map.rdbu  --compare | sqlite3
+not ok 1 - fileid_to_global_map.rdbu: fileid_to_global_map
+Non expected records in result set:
+5|3|4
+Missing records in result set:
+4|3|4
+1..1
+
 ```
 
 ## Development

@@ -319,7 +319,13 @@ def verify_content(args, number, test_name, case_name):
 'not ok {number} - {test_name}: {case_name}' END;\n"""
           )
     if args.results:
+        print("SELECT 'Result set:';")
         print(f"SELECT * FROM {case_name};")
+    if args.compare:
+        print("SELECT 'Non expected records in result set:';")
+        print(f"SELECT * FROM {case_name} EXCEPT SELECT * FROM test_expected;")
+        print("SELECT 'Missing records in result set:';")
+        print(f"SELECT * FROM test_expected EXCEPT SELECT * FROM {case_name};")
 
 
 def test_table_name(line):
@@ -509,6 +515,10 @@ def main():
     parser.add_argument('-d', '--database',
                         help='Database engine to use;' +
                         'one of sqlite, mysql, postgresql', default='mysql')
+
+    parser.add_argument('-c', '--compare',
+                        help='Compare results of each test with expected ones',
+                        action='store_true')
 
     parser.add_argument('-e', '--existing-database',
                         help='Use existing database; do not create test one',
