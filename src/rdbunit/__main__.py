@@ -339,10 +339,10 @@ def insert_values(table, types, line):
     print('INSERT INTO ' + table + ' VALUES (' + quoted_list + ');')
 
 
-def syntax_error(state, reason):
+def syntax_error(line_number, state, reason):
     """Terminate the program indicating a syntax error"""
-    sys.exit('Syntax error: ' + reason +
-             ' (state: ' + state + ')')
+    sys.exit(f"Syntax error on line {line_number}: {reason}" +
+             f" (state: {state})")
 
 
 def file_to_list(file_input):
@@ -382,7 +382,9 @@ def process_test(args, dbengine, test_name, test_spec):
     test_spec = file_to_list(test_spec)
     create_databases(dbengine, test_spec, created_databases)
     db_re = make_db_re(created_databases)
+    line_number = 0
     for line in test_spec:
+        line_number += 1
         line = line.rstrip()
         if line == '' or line[0] == '#':
             continue
@@ -418,10 +420,11 @@ def process_test(args, dbengine, test_name, test_spec):
                 elif test_statement_type == 'create':
                     state = 'result'
                 else:
-                    syntax_error(state, 'CREATE or SELECT not specified')
+                    syntax_error(line_number, state,
+                                 'CREATE or SELECT not specified')
                 test_statement_type = None
             else:
-                syntax_error(state, 'Unknown statement: ' + line)
+                syntax_error(line_number, state, 'Unknown statement: ' + line)
 
         # Table setup specifications
         elif state == 'setup':
@@ -438,7 +441,8 @@ def process_test(args, dbengine, test_name, test_spec):
             # Data
             if not table_created:
                 if not table_name:
-                    syntax_error(state, 'Attempt to provide data ' +
+                    syntax_error(line_number, state,
+                                 'Attempt to provide data ' +
                                  'without specifying a table name')
                 types = create_table(dbengine, table_name, column_names, line)
                 table_created = True
@@ -465,7 +469,8 @@ def process_test(args, dbengine, test_name, test_spec):
         elif state == 'result':
             if line == 'END':
                 if not table_name:
-                    syntax_error(state, 'Attempt to provide data ' +
+                    syntax_error(line_number, state,
+                                 'Attempt to provide data ' +
                                  'without specifying a table name')
                 if not table_created:
                     types = create_table(dbengine, 'test_expected',
