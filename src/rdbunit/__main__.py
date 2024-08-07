@@ -339,9 +339,9 @@ def insert_values(table, types, line):
     print('INSERT INTO ' + table + ' VALUES (' + quoted_list + ');')
 
 
-def syntax_error(state, line):
+def syntax_error(state, reason):
     """Terminate the program indicating a syntax error"""
-    sys.exit('Syntax error in line: ' + line +
+    sys.exit('Syntax error: ' + reason +
              ' (state: ' + state + ')')
 
 
@@ -421,7 +421,7 @@ def process_test(args, dbengine, test_name, test_spec):
                     syntax_error(state, 'CREATE or SELECT not specified')
                 test_statement_type = None
             else:
-                syntax_error(state, line)
+                syntax_error(state, 'Unknown statement: ' + line)
 
         # Table setup specifications
         elif state == 'setup':
