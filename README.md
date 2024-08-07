@@ -93,7 +93,9 @@ is to reside, followed by a dot.
 The next row contains the names of table's fields, separated by spaces.
 Then come the table's data, which are terminated by a blank line,
 or by the word `END`.
-The table data automatically derive the fields' data types.
+The table data automatically derive the fields' data types from those of
+the first row.
+(For this reason avoid specifying NULL values in the first row.)
 
 More than one table can be specified in the setup.
 In the results the table name is not specified, if the tested
