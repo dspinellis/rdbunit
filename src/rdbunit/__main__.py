@@ -36,6 +36,15 @@ import os
 import re
 import shlex
 import sys
+from pyparsing import (
+    Word,
+    CaselessKeyword,
+    Group,
+    delimitedList,
+    Optional,
+    alphas,
+    alphanums
+)
 
 # Values and their corresponding SQL data types
 RE_INTEGER = re.compile(r'\d+$')
@@ -226,15 +235,66 @@ class SqlType(object):
         return self.sql_repr(val)
 
 
-def create_table(dbengine, table_name, column_names, values):
+def create_table(dbengine, table_name, column_names, values, flag_order):
+    # pylint: disable=broad-exception-raised
     """Create the specified table taking as a hint for types the values.
     Return the type objects associated with the values."""
     print('DROP TABLE IF EXISTS ' + table_name + ';')
     # Create data type objects from the values
     types = [SqlType(dbengine, x) for x in shlex.split(values)]
-    print('CREATE TABLE ' + table_name + '(' +
-          ', '.join([n + ' ' + t.get_name() for n, t in zip(
-              column_names, types)]) + ');')
+    if flag_order == 1:
+        print(
+            'CREATE TABLE ' + table_name + ' ('
+            + ', '.join([
+                n + ' ' + t.get_name()
+                for n, t in zip(column_names, types)
+            ])
+            + ');'
+        )
+    if flag_order == -1:  # execute option for order.
+        # not apply for setup, only for reasults table.
+        if table_name == 'test_expected':
+            # Handle each supporded db diffrently.
+            # due to diffrent syntax for auto-increment column.
+            # for the CREATE command.
+            if 'DatabaseMySQL' in str(dbengine):
+                # Add Auto increment internal column for DatabaseMySQL
+                error_message = (
+                     "BEGIN ORDERED RESULT not supported for "
+                     "DatabaseMySQL"
+                )
+
+                raise Exception(error_message)
+            if 'DatabasePostgreSQL' in str(dbengine):
+                # Auto increment internal column for DatabasePostgreSQL
+                error_message = (
+                     "BEGIN ORDERED RESULT not supported for "
+                     "DatabasePostgreSQL"
+                )
+
+                raise Exception(error_message)
+            if 'DatabaseSQLite' in str(dbengine):
+                print('--Auto increment internal column for DatabaseSQLite')
+                print(
+                    'CREATE TABLE ' + table_name + ' ('
+                    + 'rn INTEGER PRIMARY KEY AUTOINCREMENT, '
+                    + ', '.join([
+                        n + ' ' + t.get_name()
+                        for n, t in zip(column_names, types)
+                    ])
+                    + ');'
+                )
+        else:  # create set up table.
+            print(
+                'CREATE TABLE ' + table_name + ' ('
+                + ', '.join(
+                    [
+                        n + ' ' + t.get_name()
+                        for n, t in zip(column_names, types)
+                    ]
+                )
+                + ');'
+            )
     return types
 
 
@@ -336,13 +396,24 @@ def test_table_name(line):
     return line[:-1]
 
 
-def insert_values(table, types, line):
+def insert_values(table, types, line, dbengine, flag_order):
     """Insert into the table the specified values and their types coming
     from line"""
 
     values = shlex.split(line)
     quoted_list = ', '.join([t.get_value(v) for v, t in zip(values, types)])
-    print('INSERT INTO ' + table + ' VALUES (' + quoted_list + ');')
+    # execute based on order && db is SQLite && step 3.
+    # Result (exclude insert of setup).
+    if (
+        flag_order == -1
+        and 'DatabaseSQLite' in str(dbengine)
+        and table == 'test_expected'
+    ):
+        # Special handling for SQLite, for autoincrement. Insert NULL.
+        print('INSERT INTO ' + table + ' VALUES (' +
+              'NULL,' + quoted_list + ');')
+    else:
+        print('INSERT INTO ' + table + ' VALUES (' + quoted_list + ');')
 
 
 def syntax_error(line_number, state, reason):
@@ -370,6 +441,53 @@ def create_databases(dbengine, test_spec, created_databases):
                             'test_' + matched.group(1))
 
 
+def extract_order_by_clauses(sql_text):
+    # pylint: disable-msg=too-many-locals
+    """Extract the final ORDER BY context"""
+    # Define SQL tokens
+    order_sql_command = CaselessKeyword("ORDER")
+    by_sql_command = CaselessKeyword("BY")
+    asc_sql_command = CaselessKeyword("ASC")
+    desc_sql_command = CaselessKeyword("DESC")
+
+    # Define a column name (allow alphanumerics and underscores)
+    column_name = Word(alphas + "_", alphanums + "_")
+
+    # Define the order term
+    # which is a column name followed by optional ASC or DESC
+    order_term = Group(
+        column_name("column") +
+        Optional(asc_sql_command | desc_sql_command,
+                 default="ASC")("direction"))
+
+    # Define the full ORDER BY clause
+    order_by_clause = (
+        order_sql_command
+        + by_sql_command
+        + Group(
+            delimitedList(
+                order_term,
+                delim=", "
+            )
+        )("order_by")
+    )
+    # Parse and extract all ORDER BY clauses
+    order_by_matches = order_by_clause.searchString(sql_text)
+    results = []
+    for match in order_by_matches:
+        # Collect the columns and their respective sort orders
+        columns_with_order = [(term.column,
+                               term.direction) for term in match.order_by]
+        results.append(columns_with_order)
+    order_by_command = 'ORDER BY'
+    for idx, order_by in enumerate(results, start=1):
+        for column, direction in order_by:
+            if idx == len(results):
+                order_by_command = order_by_command + f" {column} {direction},"
+        order_by_command = order_by_command[:-1]
+    return order_by_command
+
+
 def process_test(args, dbengine, test_name, test_spec):
     """Process the specified input stream.
     Return a regular expression matching constructed databases,
@@ -384,8 +502,14 @@ def process_test(args, dbengine, test_name, test_spec):
     # To silence pylint
     table_created = False
     column_names = []
+    # flag for checking the option ordered
+    flag_order = None
 
     test_spec = file_to_list(test_spec)
+    if 'BEGIN ORDERED RESULT' in [s.strip() for s in test_spec if s.strip()]:
+        flag_order = -1  # execute option for ordered result
+    else:
+        flag_order = 1  # execute option for not ordered result
     create_databases(dbengine, test_spec, created_databases)
     db_re = make_db_re(created_databases)
     line_number = 0
@@ -417,7 +541,7 @@ def process_test(args, dbengine, test_name, test_spec):
                 matched = RE_INCLUDE_CREATE.match(line)
                 process_sql(matched.group(1), make_db_re(created_databases))
                 test_statement_type = 'create'
-            elif line == 'BEGIN RESULT':
+            elif line in ('BEGIN RESULT', 'BEGIN ORDERED RESULT'):
                 if test_statement_type == 'select':
                     # Directly process columns; table name is implicit
                     table_name = 'test_select_result'
@@ -450,9 +574,10 @@ def process_test(args, dbengine, test_name, test_spec):
                     syntax_error(line_number, state,
                                  'Attempt to provide data ' +
                                  'without specifying a table name')
-                types = create_table(dbengine, table_name, column_names, line)
+                types = create_table(dbengine, table_name,
+                                     column_names, line, flag_order)
                 table_created = True
-            insert_values(table_name, types, line)
+            insert_values(table_name, types, line, dbengine, flag_order)
 
         # Embedded SQL code
         elif state == 'sql':
@@ -461,8 +586,21 @@ def process_test(args, dbengine, test_name, test_spec):
                 state = 'initial'
                 continue
             line = db_re.sub(r'test_\1.', line)
-            print(line)
-
+            if flag_order == 1:
+                print(line)
+            if flag_order == -1:
+                if 'ORDER BY' in line:
+                    extract_ordered_context = extract_order_by_clauses(line)
+                    print(line[0:6]
+                          + ' ROW_NUMBER() '
+                          + f'OVER({extract_ordered_context}) AS RN,'
+                          + line[6:])
+                if 'ORDER BY' not in line:
+                    print(
+                        line[0:6]
+                        + ' ROW_NUMBER() OVER(ORDER BY 1) AS RN,'
+                        + line[6:]
+                    )
         # Specification of table columns
         elif state == 'table_columns':
             # Table column names
@@ -481,7 +619,8 @@ def process_test(args, dbengine, test_name, test_spec):
                 if not table_created:
                     types = create_table(dbengine, 'test_expected',
                                          column_names,
-                                         ' '.join(column_names))
+                                         ' '.join(column_names),
+                                         flag_order)
                     table_created = True
                 verify_content(args, test_number, test_name, table_name)
                 test_number += 1
@@ -496,9 +635,10 @@ def process_test(args, dbengine, test_name, test_spec):
             # Data
             if not table_created:
                 types = create_table(dbengine, 'test_expected',
-                                     column_names, line)
+                                     column_names, line,
+                                     flag_order)
                 table_created = True
-            insert_values('test_expected', types, line)
+            insert_values('test_expected', types, line, dbengine, flag_order)
         else:
             sys.exit('Invalid state: ' + state)
     if state != 'initial':
