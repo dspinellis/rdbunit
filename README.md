@@ -265,7 +265,7 @@ entering it (`pipenv shell`), and
 installing the required development dependencies (`pipenv install --dev`),
 you can run the following commands.
 
-* ``pycodestyle src/rdbunit/__main__.py`
+* `pycodestyle src/rdbunit/__main__.py`
 * `pylint src/rdbunit/__main__.py`
 * `tests/test-parts.sh`
 * `tests/test-sqlite.sh`
